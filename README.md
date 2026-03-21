@@ -16,7 +16,7 @@ LuaCraft currently supports 1.21.4+ and will intend to support this version and 
 LuaCraft soft depends on `Vault`
 # Download
 You can download the latest release of LuaCraft at the [Releases](https://github.com/BorpBorp/LuaCraft/releases)<br>
-You can find our Discord at [Discord](https://discord.gg/Nvmajwdfmz)
+You can find our Discord at [Discord](https://discord.gg/Nvmajwdfmz)<br>
 You can find our Modrinth at [Modrinth](https://modrinth.com/plugin/officialluacraft)
 # Example
 ```lua
