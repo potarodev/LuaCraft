@@ -10,12 +10,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
-import org.luaj.vm2.lib.jse.CoerceJavaToLua;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.component.ComponentLib;
 import com.luacraft.sandbox.entity.PlayerLib;
 import com.luacraft.sandbox.inventory.InventoryLib;
@@ -31,108 +31,106 @@ public class InventoryClick implements Listener {
     @EventHandler
     public void OnInventoryClick(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
-        for (Globals globals : allGlobals.values()) {
-            LuaValue serverEvent = globals.get("ServerEvent");
+        for (Map.Entry<String, Globals> entry : allGlobals.entrySet()) {
+            LuaValue serverEvent = entry.getValue().get("ServerEvent");
             LuaValue function = serverEvent.get("OnInventoryClick");
 
-            LuaFunction getClickType = new ZeroArgFunction() {
+            LuaTable luaEvent = new LuaTable();
+            luaEvent.set("GetClickType", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.getClick().toString());
                 }
-            };
-
-            LuaFunction getClickedInventory = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetClickedInventory", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return new InventoryLib(event.getClickedInventory());
                 }
-            };
-
-            LuaFunction getSlotItem = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetSlotItem", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return new ItemStackLib(event.getCurrentItem());
                 }
-            };
-
-            LuaFunction getCursorItem = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetCursorItem", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return new ItemStackLib(event.getCursor());
                 }
-            };
-
-            LuaFunction getHotbarButton = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetHotbarButton", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.getHotbarButton());
                 }
-            };
-
-            LuaFunction getSlot = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetSlot", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.getSlot());
                 }
-            };
-
-            LuaFunction getTitle = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetTitle", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return new ComponentLib(event.getView().title());
                 }
-            };
-
-            LuaFunction isLeftClick = new ZeroArgFunction() {
+            });
+            luaEvent.set("IsLeftclick", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.isLeftClick());
                 }
-            };
-
-            LuaFunction isRightClick = new ZeroArgFunction() {
+            });
+            luaEvent.set("IsRightClick", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.isRightClick());
                 }
-            };
-
-            LuaFunction isShiftClick = new ZeroArgFunction() {
+            });
+            luaEvent.set("IsShiftClick", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.isShiftClick());
                 }
-            };
-
-            LuaFunction shouldInteract = new LuaFunction() {
+            });
+            luaEvent.set("ShouldInteract", new OneArgFunction() {
                 @Override
                 public LuaValue call(LuaValue should) {
-                    event.setCancelled(!should.toboolean());
+                    event.setCancelled(!LuaErrorAssert.checkBoolean(should, "ShouldInteract", 1, player));
 
                     return LuaValue.NIL;
                 }
-            };
-
-            LuaTable luaEvent = new LuaTable();
-            luaEvent.set("GetClickType", getClickType);
-            luaEvent.set("GetClickedInventory", getClickedInventory);
-            luaEvent.set("GetSlotItem", getSlotItem);
-            luaEvent.set("GetCursorItem", getCursorItem);
-            luaEvent.set("GetHotbarButton", getHotbarButton);
-            luaEvent.set("GetSlot", getSlot);
-            luaEvent.set("GetTitle", getTitle);
-            luaEvent.set("IsLeftclick", isLeftClick);
-            luaEvent.set("IsRightClick", isRightClick);
-            luaEvent.set("IsShiftClick", isShiftClick);
-            luaEvent.set("ShouldInteract", shouldInteract);
+            });
             luaEvent.set("Inventory", new InventoryLib(event.getInventory()));
             luaEvent.set("Player", new PlayerLib(player));
+            
             if (!function.isnil() && function.isfunction()) {
                 try {
-                    function.call(CoerceJavaToLua.coerce(luaEvent));
+                    function.call(luaEvent, new PlayerLib(player), new InventoryLib(event.getInventory()));
                 } catch(LuaError e) {
-                    Bukkit.getLogger().info("Lua Script Error: " + e.getMessage());
+                    String baseMsg = e.getMessage();
+                    String trueLocation = "";
+
+                    for (StackTraceElement element : e.getStackTrace()) {
+                        String fileName = element.getFileName();
+                        if (fileName != null && fileName.endsWith(".lua")) {
+                            trueLocation = fileName + " related to line number " + element.getLineNumber();
+                            break;
+                        }
+                    }
+
+                    if (!trueLocation.isEmpty()) {
+                        if (baseMsg != null && baseMsg.contains("?")) {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        } else {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        }
+                    }
+
+                    Bukkit.getLogger().warning("Lua Script Error: " + baseMsg);
                 }
             }
         }

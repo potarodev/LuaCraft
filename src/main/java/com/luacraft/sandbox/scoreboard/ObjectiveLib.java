@@ -8,6 +8,7 @@ import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.component.ComponentLib;
 import com.luacraft.sandbox.component.LuaComponent;
 import com.luacraft.sandbox.util.ComponentUtils;
@@ -21,10 +22,10 @@ public class ObjectiveLib extends LuaTable {
     public ObjectiveLib(Objective objective) {
         this.objective = objective;
 
-        rawset(LuaValue.valueOf("SetDisplaySlot"), new OneArgFunction() {
+        rawset("SetDisplaySlot", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue displaySlot) {
-                String slotName = displaySlot.checkjstring().toUpperCase();
+                String slotName = LuaErrorAssert.checkString(displaySlot, "SetDisplaySlot", 1, null).toUpperCase();
                 DisplaySlot slot = DisplaySlot.valueOf(slotName);
 
                 objective.setDisplaySlot(slot);
@@ -33,10 +34,10 @@ public class ObjectiveLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetNumberFormat"), new OneArgFunction() {
+        rawset("SetNumberFormat", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue numberFormat) {
-                String formatName = numberFormat.checkjstring();
+                String formatName = LuaErrorAssert.checkString(numberFormat, "SetNumberFormat", 1, null);
 
                 NumberFormat numFormat;
                 switch (formatName) {
@@ -53,7 +54,7 @@ public class ObjectiveLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetDisplayName"), new OneArgFunction() {
+        rawset("SetDisplayName", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue displayName) {
                 Component newDisplayName = ComponentUtils.luaValueToComponent(displayName);
@@ -64,7 +65,7 @@ public class ObjectiveLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("GetDisplayName"), new ZeroArgFunction() {
+        rawset("GetDisplayName", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 LuaComponent holder = new LuaComponent(objective.displayName());
@@ -73,12 +74,12 @@ public class ObjectiveLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("GetScore"), new OneArgFunction() {
+        rawset("GetScore", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue entry) {
-                String scoreEntry = entry.checkjstring();
+                String scoreEntry = LuaErrorAssert.checkString(entry, "GetScore", 1, null);
                 Score score = objective.getScore(scoreEntry);
-
+                
                 return new ScoreLib(score);
             }
         });

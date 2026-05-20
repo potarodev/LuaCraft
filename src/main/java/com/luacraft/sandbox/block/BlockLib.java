@@ -8,6 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.TileState;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -18,6 +19,7 @@ import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
 import com.luacraft.LuaCraft;
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.location.LocationLib;
 
 public class BlockLib extends LuaTable {
@@ -27,14 +29,14 @@ public class BlockLib extends LuaTable {
     public BlockLib(Block block) {
         this.block = block;
 
-        rawset(LuaValue.valueOf("GetType"), new ZeroArgFunction() {
+        rawset("GetType", new ZeroArgFunction() {
            @Override
            public LuaValue call() {
                 return LuaValue.valueOf(block.getType().toString());
            } 
         });
         
-        rawset(LuaValue.valueOf("GetName"), new ZeroArgFunction() {
+        rawset("GetName", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 String prettyName = WordUtils.capitalizeFully(block.getType().toString().replace("_", " "));
@@ -43,34 +45,34 @@ public class BlockLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("IsType"), new OneArgFunction() {
+        rawset("IsType", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue type) {
                 String prettyName = WordUtils.capitalizeFully(block.getType().toString().replace("_", " "));
-                String blockName = type.tojstring();
+                String blockName = LuaErrorAssert.checkString(type, "IsType", 1, null);
 
                 return LuaValue.valueOf(prettyName.equals(blockName));
             }
         });
 
-        rawset(LuaValue.valueOf("SetBlock"), new OneArgFunction() {
+        rawset("SetBlock", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue newBlock) {
-                Material material = Material.matchMaterial(newBlock.tojstring());
+                Material material = Material.matchMaterial(LuaErrorAssert.checkString(newBlock, "SetBlock", 1, null));
                 block.setType(material);
 
                 return LuaValue.NIL;
             }
         });
 
-        rawset(LuaValue.valueOf("GetLocation"), new ZeroArgFunction() {
+        rawset("GetLocation", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 return new LocationLib(block.getLocation());
             }
         });
 
-        rawset(LuaValue.valueOf("HasMetaData"), new OneArgFunction() {
+        rawset("HasMetaData", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue key) {
                 TileState tileState = getTileState(block);
@@ -79,18 +81,18 @@ public class BlockLib extends LuaTable {
                 if (tileState == null) {
                     pdc = block.getChunk().getPersistentDataContainer();
                     Location loc = block.getLocation();
-                    String blockKey = loc.getX() + "_" + loc.getY() + "_" + loc.getZ() + "_" + loc.getWorld().getName() + "-" + key.tojstring();
+                    String blockKey = loc.getX() + "_" + loc.getY() + "_" + loc.getZ() + "_" + loc.getWorld().getName() + "-" + LuaErrorAssert.checkString(key, "HasMetaData", 1, null);
                     nameKey = new NamespacedKey(LuaCraft.getPlugin(), blockKey);
                 } else {
                     pdc = tileState.getPersistentDataContainer();
-                    nameKey = new NamespacedKey(LuaCraft.getPlugin(), key.checkjstring());
+                    nameKey = new NamespacedKey(LuaCraft.getPlugin(), LuaErrorAssert.checkString(key, "HasMetaData", 1, null));
                 }
 
                 return LuaValue.valueOf(pdc.has(nameKey));
             }
         });
 
-        rawset(LuaValue.valueOf("SetMetaData"), new TwoArgFunction() {
+        rawset("SetMetaData", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue key, LuaValue value) {
                 TileState tileState = getTileState(block);
@@ -99,21 +101,21 @@ public class BlockLib extends LuaTable {
                 if (tileState == null) {
                     pdc = block.getChunk().getPersistentDataContainer();
                     Location loc = block.getLocation();
-                    String blockKey = loc.getX() + "_" + loc.getY() + "_" + loc.getZ() + "_" + loc.getWorld().getName() + "-" + key.tojstring();
+                    String blockKey = loc.getX() + "_" + loc.getY() + "_" + loc.getZ() + "_" + loc.getWorld().getName() + "-" + LuaErrorAssert.checkString(key, "SetMetaData", 1, null);
                     nameKey = new NamespacedKey(LuaCraft.getPlugin(), blockKey);
                     keys.add(key.tojstring());
                 } else {
                     pdc = tileState.getPersistentDataContainer();
-                    nameKey = new NamespacedKey(LuaCraft.getPlugin(), key.checkjstring());
+                    nameKey = new NamespacedKey(LuaCraft.getPlugin(), LuaErrorAssert.checkString(key, "SetMetaData", 1, null));
                     keys.add(key.tojstring());
                 }
 
                 if (value.isstring()) {
-                    pdc.set(nameKey, PersistentDataType.STRING, value.checkjstring());
+                    pdc.set(nameKey, PersistentDataType.STRING, LuaErrorAssert.checkString(key, "SetMetaData", 2, null));
                 } else if (value.isnumber()) {
-                    pdc.set(nameKey, PersistentDataType.DOUBLE, value.checkdouble());
+                    pdc.set(nameKey, PersistentDataType.DOUBLE, LuaErrorAssert.checkDouble(value, "SetMetaData", 2, null));
                 } else if (value.isboolean()) {
-                    pdc.set(nameKey, PersistentDataType.BOOLEAN, value.checkboolean());
+                    pdc.set(nameKey, PersistentDataType.BOOLEAN, LuaErrorAssert.checkBoolean(value, "SetMetaData", 2, null));
                 }
 
                 if (tileState != null)
@@ -122,7 +124,7 @@ public class BlockLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("GetMetaData"), new OneArgFunction() {
+        rawset("GetMetaData", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue key) {
                 TileState tileState = getTileState(block);
@@ -131,7 +133,7 @@ public class BlockLib extends LuaTable {
                 if (tileState == null) {
                     pdc = block.getChunk().getPersistentDataContainer();
                     Location loc = block.getLocation();
-                    String blockKey = loc.getX() + "_" + loc.getY() + "_" + loc.getZ() + "_" + loc.getWorld().getName() + "-" + key.tojstring();
+                    String blockKey = loc.getX() + "_" + loc.getY() + "_" + loc.getZ() + "_" + loc.getWorld().getName() + "-" + LuaErrorAssert.checkString(key, "GetMetaData", 1, null);
                     nameKey = new NamespacedKey(LuaCraft.getPlugin(), blockKey);
                 } else {
                     pdc = tileState.getPersistentDataContainer();
@@ -147,6 +149,26 @@ public class BlockLib extends LuaTable {
                 }
 
                 return LuaValue.NIL;
+            }
+        });
+
+        rawset("GetBlockState", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return new BlockStateLib(block.getState());
+            }
+        });
+
+        rawset("ApplyBoneMeal", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue face) {
+                if (!face.isnil()) {
+                    block.applyBoneMeal(BlockFace.valueOf(LuaErrorAssert.checkString(face, "ApplyBoneMeal", 1, null)));
+                } else {
+                    block.applyBoneMeal(BlockFace.UP);
+                }
+
+                return BlockLib.this;
             }
         });
     }

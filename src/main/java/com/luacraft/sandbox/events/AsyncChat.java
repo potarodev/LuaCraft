@@ -9,12 +9,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
-import org.luaj.vm2.lib.jse.CoerceJavaToLua;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.component.ComponentLib;
 import com.luacraft.sandbox.component.LuaComponent;
 import com.luacraft.sandbox.entity.PlayerLib;
@@ -34,11 +34,13 @@ public class AsyncChat implements Listener {
     public void OnAsyncChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
 
-        for (Globals globals : allGlobals.values()) {
-            LuaValue serverEvent = globals.get("ServerEvent");
+        for (Map.Entry<String, Globals> entry : allGlobals.entrySet()) {
+            LuaValue serverEvent = entry.getValue().get("ServerEvent");
             LuaValue function = serverEvent.get("OnAsyncChat");
 
-            LuaFunction setChatFormat = new LuaFunction() {
+            LuaTable luaEvent = new LuaTable();
+            luaEvent.set("Player", new PlayerLib(player));
+            luaEvent.set("SetChatFormat", new OneArgFunction() {
                 @Override
                 public LuaValue call(LuaValue newFormat) {
                     Component component;
@@ -51,39 +53,50 @@ public class AsyncChat implements Listener {
 
                     return LuaValue.NIL;
                 }
-            };
-
-            LuaFunction shouldChat = new LuaFunction() {
-                @Override
-                public LuaValue call(LuaValue shouldChat) {
-                    if (shouldChat.isboolean() || shouldChat.isnil()) {
-                        event.setCancelled(!shouldChat.toboolean());
-                    }
-
-                    return LuaValue.NIL;
-                }
-            };
-
-            LuaFunction getMessage = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetMessage", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     LuaComponent holder = new LuaComponent(event.message());
                     
                     return new ComponentLib(holder.getComponent());
                 }
-            };
+            });
+            luaEvent.set("ShouldChat", new OneArgFunction() {
+                @Override
+                public LuaValue call(LuaValue shouldChat) {
+                    if (shouldChat.isboolean() || shouldChat.isnil()) {
+                        event.setCancelled(!LuaErrorAssert.checkBoolean(shouldChat, "ShouldChat", 1, player));
+                    }
 
-            LuaTable luaEvent = new LuaTable();
-            luaEvent.set("Player", new PlayerLib(player));
-            luaEvent.set("SetChatFormat", setChatFormat);
-            luaEvent.set("GetMessage", getMessage);
-            luaEvent.set("ShouldChat", shouldChat);
+                    return LuaValue.NIL;
+                }
+            });
 
             if (!function.isnil() && function.isfunction()) {
                 try {
-                    function.call(CoerceJavaToLua.coerce(luaEvent));
+                    function.call(luaEvent, new PlayerLib(player), new ComponentLib(new LuaComponent(event.message()).getComponent()));
                 } catch(LuaError e) {
-                    Bukkit.getLogger().info("Lua Script Error: " + e.getMessage());
+                    String baseMsg = e.getMessage();
+                    String trueLocation = "";
+
+                    for (StackTraceElement element : e.getStackTrace()) {
+                        String fileName = element.getFileName();
+                        if (fileName != null && fileName.endsWith(".lua")) {
+                            trueLocation = fileName + " related to line number " + element.getLineNumber();
+                            break;
+                        }
+                    }
+
+                    if (!trueLocation.isEmpty()) {
+                        if (baseMsg != null && baseMsg.contains("?")) {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        } else {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        }
+                    }
+
+                    Bukkit.getLogger().warning("Lua Script Error: " + baseMsg);
                 }
             }
         }

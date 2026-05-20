@@ -1,0 +1,90 @@
+{
+    "IsFlying": {
+        "Category": "Player",
+        "Description": "Get the player's current flying state",
+        "ReturnType": "Boolean",
+        "Returns": "FlyingState"
+    },
+    
+    "SetFlying": {
+        "Category": "Player",
+        "Description": "Set the players current flying state",
+        "ArgumentTypes": ["Boolean"],
+        "Arguments": ["FlyingState"]
+    },
+
+    "GetDisplayName": {
+        "Category": "Player",
+        "Description": "Get the Display Name of the player",
+        "ReturnType": "Component",
+        "Returns": "DisplayName"
+    },
+
+    "SetDisplayName": {
+        "Category": "Player",
+        "Description": "Set the Display Name of the player",
+        "ArgumentTypes": ["Component|String"],
+        "Arguments": ["DisplayName"]
+    },
+
+    "GetPrefix": {
+        "Category": "Player",
+        "Description": "Get the player's Vault Prefix",
+        "ReturnType": "Component",
+        "Returns": "Prefix"
+    },
+
+    "SetPrefix": {
+        "Category": "Player",
+        "Description": "Set the player's Vault Prefix",
+        "ArgumentTypes": ["String"],
+        "Arguments": ["Prefix"]
+    },
+
+    "GetSuffix": {
+        "Category": "Player",
+        "Description": "Get the player's Vault Suffix",
+        "ReturnType": "Component",
+        "Returns": "Suffix"
+    },
+
+    "SetSuffix": {
+        "Category": "Player",
+        "Description": "Set the player's Vault Suffix",
+        "ArgumentTypes": ["String"],
+        "Arguments": ["Suffix"]
+    },
+
+    "GetUUID": {
+        "Category": "Player",
+        "Description": "Get the player's uuid",
+        "ReturnType": "String",
+        "Returns": "UUID"
+    },
+
+    "GetAllPlayers": {
+        "Category": "Player",
+        "Description": "Get all online players on the server",
+        "ReturnType": "Table",
+        "Returns": "OnlinePlayers"
+    },
+
+    "Inventory": {
+        "Category": "Player",
+        "Description": "An accessor object used to interact with the player's inventory. This is not a function."
+    },
+
+    "IsOnline": {
+        "Category": "Player",
+        "Description": "Returns whether the player is currently online or not",
+        "ReturnType": "Boolean",
+        "Returns": "IsOnline"
+    },
+
+    "SendMessage": {
+        "Category": "Player",
+        "Description": "Send a message directly to the player.",
+        "ArgumentTypes": ["MiniMessage|Component|String"],
+        "Arguments": ["Message"]
+    }
+}

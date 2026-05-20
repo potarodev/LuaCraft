@@ -9,6 +9,7 @@ import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.component.ComponentLib;
 import com.luacraft.sandbox.entity.EntityLib;
 import com.luacraft.sandbox.entity.PlayerLib;
@@ -19,10 +20,10 @@ import net.kyori.adventure.text.format.NamedTextColor;
 
 public class TeamLib extends LuaTable {
     public TeamLib(Team team) {
-        rawset(LuaValue.valueOf("SetColor"), new OneArgFunction() {
+        rawset("SetColor", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue color) {
-                String textColor = color.tojstring();
+                String textColor = LuaErrorAssert.checkString(color, "SetColor", 1, null);
                 NamedTextColor newColor = NamedTextColor.NAMES.value(textColor.toLowerCase());
 
                 team.color(newColor);
@@ -31,7 +32,7 @@ public class TeamLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("AddPlayer"), new OneArgFunction() {
+        rawset("AddPlayer", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue player) {
                 PlayerLib lib = (PlayerLib) player;
@@ -43,7 +44,7 @@ public class TeamLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("AddEntity"), new OneArgFunction() {
+        rawset("AddEntity", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue entity) {
                 EntityLib lib = (EntityLib) entity;
@@ -55,7 +56,7 @@ public class TeamLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("RemoveEntity"), new OneArgFunction() {
+        rawset("RemoveEntity", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue entity) {
                 EntityLib lib = (EntityLib) entity;
@@ -67,7 +68,7 @@ public class TeamLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("RemovePlayer"), new OneArgFunction() {
+        rawset("RemovePlayer", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue player) {
                 PlayerLib lib = (PlayerLib) player;
@@ -79,7 +80,7 @@ public class TeamLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("Remove"), new ZeroArgFunction() {
+        rawset("Remove", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
 
@@ -89,7 +90,7 @@ public class TeamLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetPrefix"), new OneArgFunction() {
+        rawset("SetPrefix", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue prefix) {
                 Component newPrefix = ComponentUtils.luaValueToComponent(prefix);
@@ -100,7 +101,7 @@ public class TeamLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("GetPrefix"), new ZeroArgFunction() {
+        rawset("GetPrefix", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 Component prefix = team.prefix();
@@ -109,7 +110,7 @@ public class TeamLib extends LuaTable {
             } 
         });
 
-        rawset(LuaValue.valueOf("SetSuffix"), new OneArgFunction() {
+        rawset("SetSuffix", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue suffix) {
                 Component newSuffix = ComponentUtils.luaValueToComponent(suffix);
@@ -120,7 +121,7 @@ public class TeamLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("GetSuffix"), new ZeroArgFunction() {
+        rawset("GetSuffix", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 Component suffix = team.suffix();
@@ -129,7 +130,7 @@ public class TeamLib extends LuaTable {
             } 
         });
 
-        rawset(LuaValue.valueOf("SetOption"), new TwoArgFunction() {
+        rawset("SetOption", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue option, LuaValue value) {
                 Team.Option newOption = Team.Option.valueOf(option.checkjstring().toUpperCase());

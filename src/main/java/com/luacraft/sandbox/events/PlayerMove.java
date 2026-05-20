@@ -10,12 +10,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
-import org.luaj.vm2.lib.jse.CoerceJavaToLua;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.entity.PlayerLib;
 import com.luacraft.sandbox.location.LocationLib;
 
@@ -30,82 +30,81 @@ public class PlayerMove implements Listener {
     public void OnPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
 
-        for (Globals globals : allGlobals.values()) {
-            LuaValue eventsTable = globals.get("ServerEvent");
-            LuaValue function = eventsTable.get("OnPlayerMove");
+        for (Map.Entry<String, Globals> entry : allGlobals.entrySet()) {
+            LuaValue serverEvent = entry.getValue().get("ServerEvent");
+            LuaValue function = serverEvent.get("OnPlayerMove");
 
-            LuaFunction shouldMove = new LuaFunction() {
+            LuaTable luaEvent = new LuaTable();
+            luaEvent.set("Player", new PlayerLib(player));
+            luaEvent.set("ShouldMove", new OneArgFunction() {
                 @Override
-                public LuaValue call(LuaValue arg) {
-                    if (arg.isboolean() || arg.isnil()) {
-                        boolean val = arg.toboolean();
-
-                        event.setCancelled(!val);
-                    } else {
-                        throw new LuaError("shouldMove requires a boolean!");
-                    }
+                public LuaValue call(LuaValue should) {
+                    event.setCancelled(!LuaErrorAssert.checkBoolean(should, "ShouldMove", 1, player));
 
                     return LuaValue.NIL;
                 }
-            };
-
-            LuaFunction getLastPosition = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetLastPosition", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return new LocationLib(event.getFrom());
                 }
-            };
-
-            LuaFunction hasChangedBlock = new ZeroArgFunction() {
+            });
+            luaEvent.set("HasChangedBlock", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.hasChangedBlock());
                 }
-            };
-
-            LuaFunction hasChangedOrientation = new ZeroArgFunction() {
+            });
+            luaEvent.set("HasChangedOrientation", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.hasChangedOrientation());
                 }
-            };
-
-            LuaFunction hasChangedPosition = new ZeroArgFunction() {
+            });
+            luaEvent.set("HasChangedPosition", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
-                    return LuaValue.valueOf(event.hasChangedBlock());
+                    return LuaValue.valueOf(event.hasChangedPosition());
                 }
-            };
-
-            LuaFunction explicitHasChangedBlock = new ZeroArgFunction() {
+            });
+            luaEvent.set("ExplicitHasChangedBlock", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.hasExplicitlyChangedBlock());
                 }
-            };
-
-            LuaFunction explicitHasChangedPosition = new ZeroArgFunction() {
+            });
+            luaEvent.set("ExplicitHasChangedPosition", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.hasExplicitlyChangedPosition());
                 }
-            };
+            });
 
-            LuaTable luaEvent = new LuaTable();
-            luaEvent.set("ShouldMove", shouldMove);
-            luaEvent.set("GetLastPosition", getLastPosition);
-            luaEvent.set("HasChangedBlock", hasChangedBlock);
-            luaEvent.set("HasChangedOrientation", hasChangedOrientation);
-            luaEvent.set("HasChangedPosition", hasChangedPosition);
-            luaEvent.set("ExplicitHasChangedBlock", explicitHasChangedBlock);
-            luaEvent.set("ExplicitHasChangedPosition", explicitHasChangedPosition);
-            luaEvent.set("Player", new PlayerLib(player));
-
-            if (!function.isnil()) {
+            if (!function.isnil() && function.isfunction()) {
                 try {
-                    function.call(CoerceJavaToLua.coerce(luaEvent));
-                } catch (LuaError e) {
-                    Bukkit.getLogger().info("Lua Script Error: " + e.getMessage());
+                    function.call(luaEvent, new PlayerLib(player));
+                } catch(LuaError e) {
+                    String baseMsg = e.getMessage();
+                    String trueLocation = "";
+
+                    for (StackTraceElement element : e.getStackTrace()) {
+                        String fileName = element.getFileName();
+                        if (fileName != null && fileName.endsWith(".lua")) {
+                            trueLocation = fileName + " related to line number " + element.getLineNumber();
+                            break;
+                        }
+                    }
+
+                    if (!trueLocation.isEmpty()) {
+                        if (baseMsg != null && baseMsg.contains("?")) {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        } else {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        }
+                    }
+
+                    Bukkit.getLogger().warning("Lua Script Error: " + baseMsg);
                 }
             }
         }

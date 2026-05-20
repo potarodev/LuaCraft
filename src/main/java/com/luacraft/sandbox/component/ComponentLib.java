@@ -1,25 +1,29 @@
 package com.luacraft.sandbox.component;
 
+import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
-import org.luaj.vm2.lib.ZeroArgFunction;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.minimessage.MiniMessageFactory;
 import com.luacraft.sandbox.util.ComponentUtils;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public class ComponentLib extends LuaTable {
     private final Component component;
     public ComponentLib(Component component) {
         this.component = component;
-        rawset(LuaValue.valueOf("Compare"), new OneArgFunction() {
+        rawset("Compare", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue comp2) {
                 Component otherComponent = ComponentUtils.luaValueToComponent(comp2);
@@ -30,14 +34,31 @@ public class ComponentLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("ToString"), new ZeroArgFunction() {
+        rawset("ToString", new OneArgFunction() {
             @Override
-            public LuaValue call() {
-                return LuaValue.valueOf(PlainTextComponentSerializer.plainText().serialize(component));
+            public LuaValue call(LuaValue type) {
+                String returnType;
+
+                if (!type.isnil()) {
+                    returnType = LuaErrorAssert.checkString(type, "ToString", 1, null);
+                } else {
+                    returnType = "default";
+                }
+
+                switch(returnType) {
+                    case "plain":
+                        return LuaValue.valueOf(PlainTextComponentSerializer.plainText().serialize(component));
+                    case "legacy":
+                        return LuaValue.valueOf(LegacyComponentSerializer.legacyAmpersand().serialize(component));
+                    case "minimessage":
+                        return LuaValue.valueOf(MiniMessage.miniMessage().serialize(component));
+                    default:
+                        return LuaValue.valueOf(PlainTextComponentSerializer.plainText().serialize(component));
+                }
             }
         });
 
-        rawset(LuaValue.valueOf("Italics"), new OneArgFunction() {
+        rawset("Italics", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue bool) {
                 Component modified = component.decoration(TextDecoration.ITALIC, bool.checkboolean());
@@ -45,7 +66,7 @@ public class ComponentLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("ClickEvent"), new TwoArgFunction() {
+        rawset("ClickEvent", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue type, LuaValue value) {
                 String clickEventType = type.tojstring();
@@ -62,13 +83,29 @@ public class ComponentLib extends LuaTable {
                     case "suggestcommand":
                         newComponent = component.clickEvent(ClickEvent.suggestCommand(clickEventValue));
                         return new ComponentLib(newComponent);
+                    case "callback":
+                        LuaFunction func = value.checkfunction();
+                        newComponent = component.clickEvent(ClickEvent.callback(clicker -> {
+                            func.call();
+                        }));
+                        return new ComponentLib(newComponent);
                 }
 
                 return LuaValue.NIL;
             }
         });
 
-        rawset(LuaValue.valueOf("Colorize"), new OneArgFunction() {
+        rawset("AddHoverEvent", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue compon) {
+                Component comp = ComponentUtils.luaValueToComponent(compon);
+                Component result = component.hoverEvent(HoverEvent.showText(comp));
+
+                return new ComponentLib(result);
+            }
+        });
+
+        rawset("Colorize", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue type) {
                 switch (type.checkjstring().toLowerCase()) {

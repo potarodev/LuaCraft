@@ -5,7 +5,6 @@ import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.VarArgFunction;
 
 import com.luacraft.sandbox.component.ComponentLib;
-import com.luacraft.sandbox.util.ComponentUtils;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -33,21 +32,14 @@ public class MiniMessageFactory extends VarArgFunction {
         for (int i = 1; i <= args.narg(); i++) {
             LuaValue arg = args.arg(i);
 
-            if (arg instanceof ComponentLib) {
-                if (pendingText.length() > 0) {
-                    result = result.append(MINI_MESSAGE.deserialize(pendingText.toString()));
-                    pendingText.setLength(0);
-                }
-                
-                result = result.append(ComponentUtils.luaValueToComponent(arg));
+            if (arg instanceof ComponentLib lib) {
+                pendingText.append(MINI_MESSAGE.serialize(lib.getComponent()));
             } else {
                 pendingText.append(arg.tojstring());
             }
         }
 
-        if (pendingText.length() > 0) {
-            result = result.append(MINI_MESSAGE.deserialize(pendingText.toString()));
-        }
+        result = MINI_MESSAGE.deserialize(pendingText.toString());
 
         return new ComponentLib(result);
     }

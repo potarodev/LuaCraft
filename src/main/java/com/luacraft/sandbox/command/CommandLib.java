@@ -1,25 +1,33 @@
 package com.luacraft.sandbox.command;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.bukkit.Bukkit;
-import org.bukkit.Server;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandMap;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.OneArgFunction;
+import org.luaj.vm2.Varargs;
+import org.luaj.vm2.lib.ThreeArgFunction;
 
 import com.luacraft.LuaCraft;
+import com.luacraft.LuaErrorAssert;
+import com.luacraft.sandbox.chat.ConsoleLib;
+import com.luacraft.sandbox.entity.PlayerLib;
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.LiteralMessage;
+import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 
 public class CommandLib extends LuaTable {
-    public final static Map<String, Map<String, Command>> bukkitCommands = new HashMap<>();
-    private static CommandMap commandMap;
-    private final String fileName;
+    //public final static Map<String, Map<String, Command>> bukkitCommands = new HashMap<>();
+    //private static CommandMap commandMap;
+    //private final String fileName;
 
     public static void refreshAllPlayerCommands() {
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -28,42 +36,103 @@ public class CommandLib extends LuaTable {
     }
     
     public CommandLib(String file) {
-        this.fileName = file;
+        //this.fileName = file;
 
-        Server server = Bukkit.getServer();
-
-        commandMap = server.getCommandMap();
-
-        rawset(LuaValue.valueOf("Register"), new OneArgFunction() {
+        rawset("New", new ThreeArgFunction() {
             @Override
-            public LuaValue call(LuaValue configTable) {
-                LuaValue name = configTable.get("name");
-                LuaValue description = configTable.get("description");
-                LuaValue usage = configTable.get("usage");
-                LuaValue permission = configTable.get("permission");
-                LuaFunction onExecute = (LuaFunction) configTable.get("onExecute");
+            public LuaValue call(LuaValue cmdName, LuaValue config, LuaValue callback) {
+                String name = LuaErrorAssert.checkString(cmdName, "New", 1, null);
 
-                if (!name.isstring() || name.isnil()) throw new LuaError("Name must be a string");
-                if (!onExecute.isfunction() || onExecute.isnil()) throw new LuaError("onExecute must be a function");
-                
-                String commandName = name.tojstring();
-                String commandDesc = description.isnil() ? "" : description.tojstring();
-                String commandUsage = usage.isnil() ? "" : usage.tojstring();
-                String commandPerm = permission.isnil() ? "" : permission.tojstring();
+                LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(name);
+                RequiredArgumentBuilder<CommandSourceStack, ?> current = null;
 
-                Bukkit.getScheduler().runTask(LuaCraft.getPlugin(), () -> {
-                    Command cmd = new CommandExecute(commandName, onExecute);
-                    cmd.setDescription(commandDesc);
-                    cmd.setUsage(commandUsage);
-                    cmd.setPermission(commandPerm);
+                if (!config.isnil()) {
+                    LuaTable configTable = LuaErrorAssert.checkTable(config, "New", 2, null);
+                    //LuaTable argumentConfigs = LuaErrorAssert.checkTable(configTable.get(i), "New", 2, null);
+                    LuaValue key = LuaValue.NIL;
 
-                    commandMap.register("LuaCraft", cmd);
+                    while (true) {
+                        Varargs entry = configTable.next(key);
+                        key = entry.arg1();
+                        if (key.isnil()) break;
 
-                    Bukkit.getScheduler().runTask(LuaCraft.getPlugin(), () -> refreshAllPlayerCommands());
+                        String argumentName = LuaErrorAssert.checkString(key, "New", 2, null);
+                        LuaTable argumentConfig = LuaErrorAssert.checkTable(entry.arg(2), "New", 2, null);
+                        String argumentType = LuaErrorAssert.checkString(argumentConfig.get(1), "New", 2, null);
+                        LuaTable argumentSuggestions = LuaErrorAssert.checkTable(argumentConfig.get(2), "New", 3, null);
+                        LuaValue argumentCallback = argumentSuggestions != null ? argumentConfig.get(3) : argumentConfig.get(2);
 
-                    Map<String, Command> commandsForFile = bukkitCommands.computeIfAbsent(fileName, k -> new HashMap<>());
-                    commandsForFile.put(commandName, cmd);
-                });
+                        RequiredArgumentBuilder<CommandSourceStack, ?> argument = switch (argumentType) {
+                            case "PLAYER" -> Commands.argument(argumentName, ArgumentTypes.player());
+                            case "INTENGER", "NUMBER" -> Commands.argument(argumentName, IntegerArgumentType.integer());
+                            case "STRING", "TEXT" -> Commands.argument(argumentName, StringArgumentType.string());
+                            case "GREEDY", "GREEDYSTRING" -> Commands.argument(argumentName, StringArgumentType.greedyString());
+                            case "WORD" -> Commands.argument(argumentName, StringArgumentType.word());
+                            case "BOOLEAN", "BOOL" -> Commands.argument(argumentName, BoolArgumentType.bool());
+                            default -> Commands.argument(argumentName, StringArgumentType.word());
+                        };
+
+                        if (argumentCallback != null) {
+                            if (argumentSuggestions != null) {
+                                argument.suggests((ctx, builder) -> {
+                                    LuaValue sKey = LuaValue.NIL;
+                                    while (true) {
+                                        Varargs sEntry = argumentSuggestions.next(sKey);
+                                        sKey = sEntry.arg1();
+                                        if (sKey.isnil()) break;
+
+                                        LuaValue sValue = sEntry.arg(2);
+
+                                        String suggestion = LuaErrorAssert.checkString(sKey, "New", 2, null);
+                                        String tooltip = LuaErrorAssert.checkString(sValue, "New", 2, null);
+
+                                        builder.suggest(suggestion, new LiteralMessage(tooltip));
+                                    }
+                                    return builder.buildFuture();
+                                });
+                            }
+
+                            argument.executes(ctx -> {
+                                LuaValue sender = LuaValue.NIL;
+                                if (ctx.getSource().getSender() instanceof Player player) {
+                                        sender = new PlayerLib(player);
+                                    } else if (ctx.getSource().getSender() instanceof ConsoleCommandSender console) {
+                                        sender = new ConsoleLib(console);
+                                }
+
+                                argumentCallback.call(sender);
+
+                                return Command.SINGLE_SUCCESS;
+                            });
+
+                            if (current == null) {
+                                root.then(argument);
+                            } else {
+                                current.then(argument);
+                            }
+                            current = argument;
+                        }
+                    }
+                }
+                if (!callback.isnil()) {
+                    LuaValue functionCallback = LuaErrorAssert.checkFunction(callback, "New", 3, null);
+                    if (functionCallback != null) {
+                        root.executes(ctx -> {
+                            LuaValue sender = LuaValue.NIL;
+                            if (ctx.getSource().getSender() instanceof Player player) {
+                                sender = new PlayerLib(player);
+                            } else if (ctx.getSource().getSender() instanceof ConsoleCommandSender console) {
+                                sender = new ConsoleLib(console);
+                            }
+
+                            functionCallback.call(sender);
+
+                            return Command.SINGLE_SUCCESS;
+                        });
+                    }
+                }
+
+                LuaCraft.dispatcher.register(root);
 
                 return LuaValue.NIL;
             }
@@ -71,22 +140,22 @@ public class CommandLib extends LuaTable {
     }
 
     
-    public static void commandUnRegister(String fileName) {
-        Map<String, Command> commandsForFile = bukkitCommands.get(fileName);
-        if (commandsForFile == null) return;
-        
-        Map<String, Command> knownCommands = commandMap.getKnownCommands();
-
-        for (Map.Entry<String, Command> entry : commandsForFile.entrySet()) {
-            String cmdName = entry.getKey();
-            Command cmd = entry.getValue();
-            
-            cmd.unregister(commandMap);
-            knownCommands.remove(cmdName);
-            knownCommands.remove("LuaCraft:" + cmdName);
-        }
-
-        commandsForFile.clear();
-        bukkitCommands.remove(fileName);
-    }
+    //public static void commandUnRegister(String fileName) {
+    //    Map<String, Command> commandsForFile = bukkitCommands.get(fileName);
+    //    if (commandsForFile == null) return;
+    //    
+    //    Map<String, Command> knownCommands = commandMap.getKnownCommands();
+//
+    //    for (Map.Entry<String, Command> entry : commandsForFile.entrySet()) {
+    //        String cmdName = entry.getKey();
+    //        Command cmd = entry.getValue();
+    //        
+    //        cmd.unregister(commandMap);
+    //        knownCommands.remove(cmdName);
+    //        knownCommands.remove("LuaCraft:" + cmdName);
+    //    }
+//
+    //    commandsForFile.clear();
+    //    bukkitCommands.remove(fileName);
+    //}
 }

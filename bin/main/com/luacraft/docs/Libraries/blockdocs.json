@@ -1,0 +1,61 @@
+{
+    "GetType": {
+        "Category": "Block",
+        "Description": "Returns the matieral type of the block",
+        "ReturnType": "String",
+        "Returns": "Type"
+    },
+
+    "GetName": {
+        "Category": "Block",
+        "Description": "Returns the pretty name of the block",
+        "ReturnType": "String",
+        "Returns": "Name"
+    },
+
+    "IsType": {
+        "Category": "Block",
+        "Description": "Checks if the material types of the two blocks are the same",
+        "ArgumentTypes": ["String"],
+        "Arguments": ["Type"],
+        "ReturnType": "Boolean",
+        "Returns": "IsType"
+    },
+
+    "SetBlock": {
+        "Category": "Block",
+        "Description": "Sets the block to a new block",
+        "ArgumentTypes": ["String"],
+        "Arguments": ["Type"]
+    },
+
+    "GetLocation": {
+        "Category": "Block",
+        "Description": "Returns the location of the block",
+        "ReturnType": "Location",
+        "Returns": "BlockLocation"
+    },
+
+    "HasMetaData": {
+        "Category": "Block",
+        "Description": "Returns whether the block has the MetaData",
+        "ArgumentTypes": ["String"],
+        "Arguments": ["Key"],
+        "ReturnType": "Boolean",
+        "Returns": "HasMetaData"
+    },
+
+    "SetMetaData": {
+        "Category": "Block",
+        "Description": "Set the MetaData of a block. Supports String, Number and Boolean",
+        "ArgumentTypes": ["String", "String|Number|Boolean"],
+        "Arguments": ["Key", "Value"]
+    },
+
+    "GetMetaData": {
+        "Category": "Block",
+        "Description": "Get the MetaData by the key from a block",
+        "ArgumentTypes": ["String"],
+        "Arguments": ["Key"]
+    }
+}

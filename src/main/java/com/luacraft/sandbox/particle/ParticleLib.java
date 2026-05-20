@@ -11,6 +11,7 @@ import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
 import com.destroystokyo.paper.ParticleBuilder;
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.color.ColorLib;
 import com.luacraft.sandbox.vector.VectorLib;
 
@@ -24,16 +25,16 @@ public class ParticleLib extends LuaTable {
         
         builder = new ParticleBuilder(particle).location(location);
 
-        rawset(LuaValue.valueOf("Count"), new OneArgFunction() {
+        rawset("Count", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue num) {
-                builder = builder.count(num.checkint());
+                builder = builder.count(LuaErrorAssert.checkInt(num, "Count", 1, null));
 
                 return LuaValue.NIL;
             }
         });
 
-        rawset(LuaValue.valueOf("Offset"), new OneArgFunction() {
+        rawset("Offset", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue offset) {
                 Vector vec = ((VectorLib) offset).getVector();
@@ -44,7 +45,7 @@ public class ParticleLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("Color"), new OneArgFunction() {
+        rawset("Color", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue color) {
                 ColorLib colorLib = (ColorLib) color.checkuserdata(ColorLib.class);
@@ -59,10 +60,10 @@ public class ParticleLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("Size"), new OneArgFunction() {
+        rawset("Size", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue size) {
-                float sz = size.checknumber().tofloat();
+                float sz = LuaErrorAssert.checkFloat(size, "Size", 1, null);
 
                 if (builder.particle().getDataType() == Particle.DustOptions.class || builder.particle().getDataType() == Color.class) {
                     pendingSize = sz;
@@ -74,25 +75,25 @@ public class ParticleLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("Power"), new OneArgFunction() {
+        rawset("Power", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue power) {
-                builder = builder.data(power.checknumber().tofloat());
+                builder = builder.data(LuaErrorAssert.checkFloat(power, "Power", 1, null));
 
                 return LuaValue.NIL;
             }
         });
 
-        rawset(LuaValue.valueOf("Receivers"), new OneArgFunction() {
+        rawset("Receivers", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue radius) {
-                builder = builder.receivers(radius.checkint(), true);
+                builder = builder.receivers(LuaErrorAssert.checkInt(radius, "Receivers", 1, null), true);
 
                 return LuaValue.NIL;
             }
         });
 
-        rawset(LuaValue.valueOf("Spawn"), new ZeroArgFunction() {
+        rawset("Spawn", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 if (pendingColor != null || pendingSize != null) {

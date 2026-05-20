@@ -10,10 +10,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.jse.CoerceJavaToLua;
+import org.luaj.vm2.lib.OneArgFunction;
 
 import com.luacraft.sandbox.entity.PlayerLib;
 import com.luacraft.sandbox.util.ComponentUtils;
@@ -29,11 +28,13 @@ public class PlayerQuit implements Listener {
     public void OnPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
-        for (Globals globals : allGlobals.values()) {
-            LuaValue eventsTable = globals.get("ServerEvent");
-            LuaValue function = eventsTable.get("OnPlayerQuit");
+        for (Map.Entry<String, Globals> entry : allGlobals.entrySet()) {
+            LuaValue serverEvent = entry.getValue().get("ServerEvent");
+            LuaValue function = serverEvent.get("OnPlayerQuit");
 
-            LuaFunction setQuitMessage = new LuaFunction() {
+            LuaTable luaEvent = new LuaTable();
+            luaEvent.set("Player", new PlayerLib(player));
+            luaEvent.set("SetQuitMessage", new OneArgFunction() {
                 @Override
                 public LuaValue call(LuaValue arg) {
                     if (arg.isnil()) {
@@ -44,16 +45,32 @@ public class PlayerQuit implements Listener {
 
                     return LuaValue.NIL;
                 }
-            };
+            });
 
-            LuaTable luaEvent = new LuaTable();
-            luaEvent.set("SetQuitMessage", setQuitMessage);
-            luaEvent.set("Player", new PlayerLib(player));
             if (!function.isnil() && function.isfunction()) {
                 try {
-                    function.call(CoerceJavaToLua.coerce(luaEvent));
+                    function.call(luaEvent, new PlayerLib(player));
                 } catch(LuaError e) {
-                    Bukkit.getLogger().info("Lua Script Error: " + e.getMessage());
+                    String baseMsg = e.getMessage();
+                    String trueLocation = "";
+
+                    for (StackTraceElement element : e.getStackTrace()) {
+                        String fileName = element.getFileName();
+                        if (fileName != null && fileName.endsWith(".lua")) {
+                            trueLocation = fileName + " related to line number " + element.getLineNumber();
+                            break;
+                        }
+                    }
+
+                    if (!trueLocation.isEmpty()) {
+                        if (baseMsg != null && baseMsg.contains("?")) {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        } else {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        }
+                    }
+
+                    Bukkit.getLogger().warning("Lua Script Error: " + baseMsg);
                 }
             }
         }

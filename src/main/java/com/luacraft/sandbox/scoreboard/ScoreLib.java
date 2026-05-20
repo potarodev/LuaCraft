@@ -6,6 +6,7 @@ import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.util.ComponentUtils;
 
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
@@ -18,16 +19,16 @@ public class ScoreLib extends LuaTable {
     public ScoreLib(Score score) {
         this.score = score;
 
-        rawset(LuaValue.valueOf("SetScore"), new OneArgFunction() {
+        rawset("SetScore", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue value) {
-                score.setScore(value.checkint());
+                score.setScore(LuaErrorAssert.checkInt(value, "SetScore", 1, null));
 
                 return LuaValue.NIL;
             }
         });
 
-        rawset(LuaValue.valueOf("SetCustomName"), new OneArgFunction() {
+        rawset("SetCustomName", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue component) {
                 Component comp = ComponentUtils.luaValueToComponent(component);
@@ -38,10 +39,10 @@ public class ScoreLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetNumberFormat"), new TwoArgFunction() {
+        rawset("SetNumberFormat", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue type, LuaValue component) {
-                String typeName = type.checkjstring().toLowerCase();
+                String typeName = LuaErrorAssert.checkString(type, "SetNumberFormat", 1, null).toLowerCase();
 
                 switch(typeName) {
                     case "fixed":

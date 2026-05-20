@@ -31,4 +31,8 @@ public class ComponentUtils {
     public static Component parseLegacy(String text) {
         return LEGACY.deserialize(text);
     }
+
+    public static String toLegacy(Component component) {
+        return LEGACY.serialize(component);
+    }
 }

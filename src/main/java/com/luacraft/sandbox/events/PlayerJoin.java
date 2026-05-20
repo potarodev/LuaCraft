@@ -4,17 +4,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
-import org.luaj.vm2.lib.jse.CoerceJavaToLua;
 
 import com.luacraft.sandbox.entity.PlayerLib;
 import com.luacraft.sandbox.util.ComponentUtils;
@@ -28,13 +26,15 @@ public class PlayerJoin implements Listener {
 
     @EventHandler
     public void OnPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
+        LuaValue player = new PlayerLib(event.getPlayer());
 
-        for (Globals globals : allGlobals.values()) {
-            LuaValue eventsTable = globals.get("ServerEvent");
-            LuaValue function = eventsTable.get("OnPlayerJoin");
+        for (Map.Entry<String, Globals> entry : allGlobals.entrySet()) {
+            LuaValue serverEvent = entry.getValue().get("ServerEvent");
+            LuaValue function = serverEvent.get("OnPlayerJoin");
 
-            LuaFunction setJoinMessage = new LuaFunction() {
+            LuaTable luaEvent = new LuaTable();
+            luaEvent.set("Player", player);
+            luaEvent.set("SetJoinMessage", new OneArgFunction() {
                 @Override
                 public LuaValue call(LuaValue arg) {
                     if (arg.isnil()) {
@@ -45,25 +45,38 @@ public class PlayerJoin implements Listener {
 
                     return LuaValue.NIL;
                 }
-            };
-
-            LuaFunction hasPlayedBefore = new ZeroArgFunction() {
+            });
+            luaEvent.set("HasPlayedBefore", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
-                    return LuaValue.valueOf(player.hasPlayedBefore());
+                    return LuaValue.valueOf(event.getPlayer().hasPlayedBefore());
                 }
-            };
-
-            LuaTable luaEvent = new LuaTable();
-            luaEvent.set("SetJoinMessage", setJoinMessage);
-            luaEvent.set("Player", new PlayerLib(player));
-            luaEvent.set("HasPlayedBefore", hasPlayedBefore);
+            });
 
             if (!function.isnil() && function.isfunction()) {
                 try {
-                    function.call(CoerceJavaToLua.coerce(luaEvent));
+                    function.call(luaEvent, player);
                 } catch(LuaError e) {
-                    Bukkit.getLogger().info("Lua Script Error: " + e.getMessage());
+                    String baseMsg = e.getMessage();
+                    String trueLocation = "";
+
+                    for (StackTraceElement element : e.getStackTrace()) {
+                        String fileName = element.getFileName();
+                        if (fileName != null && fileName.endsWith(".lua")) {
+                            trueLocation = fileName + " related to line number " + element.getLineNumber();
+                            break;
+                        }
+                    }
+
+                    if (!trueLocation.isEmpty()) {
+                        if (baseMsg != null && baseMsg.contains("?")) {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        } else {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        }
+                    }
+
+                    Bukkit.getLogger().warning("Lua Script Error: " + baseMsg);
                 }
             }
         }

@@ -5,6 +5,7 @@ import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.ThreeArgFunction;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.color.ColorLib;
 
 public class ColorUtils extends LuaTable {
@@ -12,7 +13,10 @@ public class ColorUtils extends LuaTable {
         return new ThreeArgFunction() {
             @Override
             public LuaValue call(LuaValue r, LuaValue g, LuaValue b) {
-                return LuaValue.userdataOf(new ColorLib(r.checkint(), g.checkint(), b.checkint()));
+                int red = LuaErrorAssert.checkInt(r, "Color", 1, null);
+                int green = LuaErrorAssert.checkInt(g, "Color", 2, null);
+                int blue = LuaErrorAssert.checkInt(b, "Color", 3, null);
+                return LuaValue.userdataOf(new ColorLib(red, green, blue));
             }
         };
     }

@@ -8,25 +8,29 @@ import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.item.ItemStackLib;
 
 
 public class ItemLib extends EntityLib {
+    private final Item entity;
+
     public ItemLib(Item entity) {
         super(entity);
+        this.entity = entity;
 
-        rawset(LuaValue.valueOf("GetItemStack"), new ZeroArgFunction() {
+        rawset("GetItemStack", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 return new ItemStackLib(entity.getItemStack());
             }
         });
 
-        rawset(LuaValue.valueOf("SetItemStack"), new TwoArgFunction() {
+        rawset("SetItemStack", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue material, LuaValue amount) {
-                Material mat = Material.matchMaterial(material.checkjstring());
-                int amt = amount.checkint();
+                Material mat = Material.matchMaterial(LuaErrorAssert.checkString(material, "SetItemStack", 1, null));
+                int amt = LuaErrorAssert.checkInt(amount, "SetItemStack", 2, null);
 
                 if (mat == null) return LuaValue.NIL;
 
@@ -38,10 +42,10 @@ public class ItemLib extends EntityLib {
             }
         });
 
-        rawset(LuaValue.valueOf("SetPickupDelay"), new OneArgFunction() {
+        rawset("SetPickupDelay", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue delay) {
-                int newDelay = delay.checkint();
+                int newDelay = LuaErrorAssert.checkInt(delay, "SetPickupDelay", 1, null);
 
                 entity.setPickupDelay(newDelay);
 
@@ -49,11 +53,15 @@ public class ItemLib extends EntityLib {
             }
         });
 
-        rawset(LuaValue.valueOf("GetPickupDelay"), new ZeroArgFunction() {
+        rawset("GetPickupDelay", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 return LuaValue.valueOf(entity.getPickupDelay());
             }
         });
-    }   
+    }
+
+    public Item getItemEntity() {
+        return entity;
+    }
 }

@@ -16,13 +16,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
-import org.luaj.vm2.lib.jse.CoerceJavaToLua;
 
 import com.luacraft.LuaCraft;
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.block.BlockLib;
 import com.luacraft.sandbox.entity.PlayerLib;
 import com.luacraft.sandbox.item.ItemStackLib;
@@ -39,33 +39,28 @@ public class PlayerBlockBreak implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
 
-        for (Globals globals : allGlobals.values()) {
-            LuaValue serverEvent = globals.get("ServerEvent");
+        for (Map.Entry<String, Globals> entry : allGlobals.entrySet()) {
+            LuaValue serverEvent = entry.getValue().get("ServerEvent");
             LuaValue function = serverEvent.get("OnBlockBreak");
 
-            LuaFunction shouldBreak = new LuaFunction() {
+            LuaTable luaEvent = new LuaTable();
+            luaEvent.set("ShouldBreak", new OneArgFunction() {
                 @Override
-                public LuaValue call(LuaValue arg) {
-                    if (arg.isboolean() || arg.isnil()) {
-                        event.setCancelled(!arg.toboolean());
-                    }
+                public LuaValue call(LuaValue should) {
+                    event.setCancelled(!LuaErrorAssert.checkBoolean(should, "ShouldBreak", 1, player));
 
                     return LuaValue.NIL;
                 }
-            };
-
-            LuaFunction shouldDropItems = new LuaFunction() {
+            });
+            luaEvent.set("ShouldDropItems", new OneArgFunction() {
                 @Override
-                public LuaValue call(LuaValue arg) {
-                    if (arg.isboolean() || arg.isnil()) {
-                        event.setDropItems(arg.toboolean());
-                    }
+                public LuaValue call(LuaValue should) {
+                    event.setDropItems(LuaErrorAssert.checkBoolean(should, "ShouldDropItems", 1, player));
 
                     return LuaValue.NIL;
                 }
-            };
-
-            LuaFunction getItemDrops = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetDrops", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     Collection<ItemStack> drops = block.getDrops();
@@ -79,19 +74,34 @@ public class PlayerBlockBreak implements Listener {
 
                     return allDrops;
                 }
-            };
-
-            LuaTable luaEvent = new LuaTable();
-            luaEvent.set("ShouldBreak", shouldBreak);
-            luaEvent.set("ShouldDropItems", shouldDropItems);
-            luaEvent.set("GetDrops", getItemDrops);
+            });
             luaEvent.set("Player", new PlayerLib(player));
             luaEvent.set("Block", new BlockLib(block));
+
             if (!function.isnil() && function.isfunction()) {
                 try {
-                    function.call(CoerceJavaToLua.coerce(luaEvent));
+                    function.call(luaEvent, new PlayerLib(player), new BlockLib(block));
                 } catch(LuaError e) {
-                    Bukkit.getLogger().info("Lua Script Error: " + e.getMessage());
+                    String baseMsg = e.getMessage();
+                    String trueLocation = "";
+
+                    for (StackTraceElement element : e.getStackTrace()) {
+                        String fileName = element.getFileName();
+                        if (fileName != null && fileName.endsWith(".lua")) {
+                            trueLocation = fileName + " related to line number " + element.getLineNumber();
+                            break;
+                        }
+                    }
+
+                    if (!trueLocation.isEmpty()) {
+                        if (baseMsg != null && baseMsg.contains("?")) {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        } else {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        }
+                    }
+
+                    Bukkit.getLogger().warning("Lua Script Error: " + baseMsg);
                 }
             }
         }

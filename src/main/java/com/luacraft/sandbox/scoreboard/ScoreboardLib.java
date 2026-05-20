@@ -10,6 +10,7 @@ import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.entity.PlayerLib;
 import com.luacraft.sandbox.teams.TeamLib;
 import com.luacraft.sandbox.util.ComponentUtils;
@@ -22,7 +23,7 @@ public class ScoreboardLib extends LuaTable {
     public ScoreboardLib(Scoreboard scoreboard) {
         this.scoreboard = scoreboard;
 
-        rawset(LuaValue.valueOf("NewObjective"), new TwoArgFunction() {
+        rawset("NewObjective", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue name, LuaValue displayName) {
                 String objName = name.tojstring();
@@ -34,7 +35,7 @@ public class ScoreboardLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("AddToPlayer"), new OneArgFunction() {
+        rawset("AddToPlayer", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue player) {
                 PlayerLib lib = (PlayerLib) player;
@@ -46,13 +47,13 @@ public class ScoreboardLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("NewTeam"), new OneArgFunction() {
+        rawset("NewTeam", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue name) {
-                Boolean exists = scoreboard.getTeam(name.tojstring()) != null;
+                Boolean exists = scoreboard.getTeam(LuaErrorAssert.checkString(name, "NewTeam", 1, null)) != null;
                 Team team;
 
-                String teamName = name.tojstring();
+                String teamName = LuaErrorAssert.checkString(name, "NewTeam", 1, null);
                 
                 if (!exists) {
                     team = scoreboard.registerNewTeam(teamName);

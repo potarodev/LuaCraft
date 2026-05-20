@@ -10,7 +10,7 @@ import com.luacraft.sandbox.item.ItemStackLib;
 
 public class EquipmentLib extends LuaTable {
     public EquipmentLib(EntityEquipment equipment) {
-        rawset(LuaValue.valueOf("SetMainHand"), new OneArgFunction() {
+        rawset("SetMainHand", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
                 
@@ -25,7 +25,7 @@ public class EquipmentLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetOffHand"), new OneArgFunction() {
+        rawset("SetOffHand", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
 
@@ -40,7 +40,7 @@ public class EquipmentLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetHelmet"), new OneArgFunction() {
+        rawset("SetHelmet", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
 
@@ -55,7 +55,7 @@ public class EquipmentLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetChestplate"), new OneArgFunction() {
+        rawset("SetChestplate", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
 
@@ -70,7 +70,7 @@ public class EquipmentLib extends LuaTable {
             } 
         });
 
-        rawset(LuaValue.valueOf("SetLeggings"), new OneArgFunction() {
+        rawset("SetLeggings", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
 
@@ -85,7 +85,7 @@ public class EquipmentLib extends LuaTable {
             } 
         });
 
-        rawset(LuaValue.valueOf("SetBoots"), new OneArgFunction() {
+        rawset("SetBoots", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
 

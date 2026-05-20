@@ -12,13 +12,12 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
-import org.luaj.vm2.lib.jse.CoerceJavaToLua;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.block.BlockLib;
 import com.luacraft.sandbox.entity.PlayerLib;
 import com.luacraft.sandbox.inventory.EquipmentSlotLib;
@@ -36,39 +35,37 @@ public class PlayerInteract implements Listener {
     public void OnPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
 
-        for (Globals globals : allGlobals.values()) {
-            LuaValue eventsTable = globals.get("ServerEvent");
-            LuaValue function = eventsTable.get("OnPlayerInteract");
+        for (Map.Entry<String, Globals> entry : allGlobals.entrySet()) {
+            LuaValue serverEvent = entry.getValue().get("ServerEvent");
+            LuaValue function = serverEvent.get("OnPlayerInteract");
             
-            LuaFunction getActionType = new ZeroArgFunction() {
+            LuaTable luaEvent = new LuaTable();
+            luaEvent.set("Player", new PlayerLib(player));
+            luaEvent.set("GetActionType", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.getAction().toString());
                 }
-            };
-
-            LuaFunction getClickedBlock = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetClickedBlock", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return new BlockLib(event.getClickedBlock());
                 }
-            };
-
-            LuaFunction getHand = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetHand", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return new EquipmentSlotLib(event.getHand());
                 }
-            };
-
-            LuaFunction getInteractionPoint = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetInteractionPoint", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return new LocationLib(event.getInteractionPoint());
                 }
-            };
-
-            LuaFunction getItem = new ZeroArgFunction() {
+            });
+            luaEvent.set("GetItem", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     ItemStack item = event.getItem();
@@ -78,39 +75,34 @@ public class PlayerInteract implements Listener {
 
                     return new ItemStackLib(item);
                 }
-            };
-
-            LuaFunction involvedBlock = new ZeroArgFunction() {
+            });
+            luaEvent.set("InvolvedBlock", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.hasBlock());
                 }
-            };
-
-            LuaFunction involvedItem = new ZeroArgFunction() {
+            });
+            luaEvent.set("InvolvedItem", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.hasItem());
                 }
-            };
-
-            LuaFunction isBlockInHand = new ZeroArgFunction() {
+            });
+            luaEvent.set("IsBlockInHand", new ZeroArgFunction() {
                 @Override
                 public LuaValue call() {
                     return LuaValue.valueOf(event.isBlockInHand());
                 }
-            };
-
-            LuaFunction shouldInteract = new OneArgFunction() {
+            });
+            luaEvent.set("ShouldInteract", new OneArgFunction() {
                 @Override
                 public LuaValue call(LuaValue should) {
-                    event.setCancelled(!should.toboolean());
+                    event.setCancelled(!LuaErrorAssert.checkBoolean(should, "ShouldInteract", 1, player));
 
                     return LuaValue.NIL;
                 }
-            };
-
-            LuaFunction shouldUseInteractedBlock = new OneArgFunction() {
+            });
+            luaEvent.set("ShouldUseInteractedBlock", new OneArgFunction() {
                 @Override
                 public LuaValue call(LuaValue should) {
                     String can = "DEFAULT";
@@ -127,9 +119,8 @@ public class PlayerInteract implements Listener {
 
                     return LuaValue.NIL;
                 }
-            };
-
-            LuaFunction shouldUseItemInHand = new OneArgFunction() {
+            });
+            luaEvent.set("ShouldUseItemInHand", new OneArgFunction() {
                 @Override
                 public LuaValue call(LuaValue should) {
                     String can = "DEFAULT";
@@ -146,27 +137,32 @@ public class PlayerInteract implements Listener {
 
                     return LuaValue.NIL;
                 }
-            };
-            
-            LuaTable luaEvent = new LuaTable();
-            luaEvent.set("Player", new PlayerLib(player));
-            luaEvent.set("GetActionType", getActionType);
-            luaEvent.set("GetClickedBlock", getClickedBlock);
-            luaEvent.set("GetHand", getHand);
-            luaEvent.set("GetInteractionPoint", getInteractionPoint);
-            luaEvent.set("GetItem", getItem);
-            luaEvent.set("InvolvedBlock", involvedBlock);
-            luaEvent.set("InvolvedItem", involvedItem);
-            luaEvent.set("IsBlockInHand", isBlockInHand);
-            luaEvent.set("ShouldInteract", shouldInteract);
-            luaEvent.set("ShouldUseInteractedBlock", shouldUseInteractedBlock);
-            luaEvent.set("ShouldUseItemInHand", shouldUseItemInHand);
+            });
 
             if (!function.isnil() && function.isfunction()) {
                 try {
-                    function.call(CoerceJavaToLua.coerce(luaEvent));
+                    function.call(luaEvent, new PlayerLib(player));
                 } catch(LuaError e) {
-                    Bukkit.getLogger().info("Lua Script Error: " + e.getMessage());
+                    String baseMsg = e.getMessage();
+                    String trueLocation = "";
+
+                    for (StackTraceElement element : e.getStackTrace()) {
+                        String fileName = element.getFileName();
+                        if (fileName != null && fileName.endsWith(".lua")) {
+                            trueLocation = fileName + " related to line number " + element.getLineNumber();
+                            break;
+                        }
+                    }
+
+                    if (!trueLocation.isEmpty()) {
+                        if (baseMsg != null && baseMsg.contains("?")) {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        } else {
+                            baseMsg = trueLocation + ": " + baseMsg;
+                        }
+                    }
+
+                    Bukkit.getLogger().warning("Lua Script Error: " + baseMsg);
                 }
             }
         }

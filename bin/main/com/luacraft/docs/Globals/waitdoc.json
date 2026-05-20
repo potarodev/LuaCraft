@@ -1,0 +1,7 @@
+{
+    "Wait": {
+        "Description": "Schedule a function to be run at a later time",
+        "ArgumentTypes": ["Number", "Function"],
+        "Arguments": ["Ticks", "Callback"]
+    }
+}

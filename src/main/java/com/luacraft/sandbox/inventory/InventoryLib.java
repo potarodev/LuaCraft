@@ -15,6 +15,7 @@ import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
 import com.luacraft.LuaCraft;
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.entity.PlayerLib;
 import com.luacraft.sandbox.item.ItemStackLib;
 
@@ -23,7 +24,7 @@ import io.papermc.paper.persistence.PersistentDataContainerView;
 public class InventoryLib extends LuaTable {
     public InventoryLib(Inventory inventory) {
 
-        rawset(LuaValue.valueOf("GiveItem"), new OneArgFunction() {
+        rawset("GiveItem", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue item) {
                 if (inventory != null) {
@@ -35,19 +36,43 @@ public class InventoryLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetItem"), new TwoArgFunction() {
+        rawset("SetItem", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue slot, LuaValue item) {
                 if (inventory != null) {
                     ItemStack i = ((ItemStackLib) item).stack;
-                    inventory.setItem(slot.toint(), i);
+                    inventory.setItem(LuaErrorAssert.checkInt(slot, "SetItem", 1, null), i);
                 }
 
                 return LuaValue.NIL;
             }
         });
 
-        rawset(LuaValue.valueOf("Open"), new OneArgFunction() {
+        rawset("ClearSlot", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue slot) {
+                inventory.clear(LuaErrorAssert.checkInt(slot, "RemoveItem", 1, null));
+
+                return LuaValue.NIL;
+            }
+        });
+
+        rawset("RemoveItem", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue item) {
+                ItemStack i = ((ItemStackLib) item).stack;
+
+                if (i == null) {
+                    throw new LuaError("RemoveItem requires a valid item to be passed");
+                }
+
+                inventory.removeItemAnySlot(i);
+
+                return LuaValue.NIL;
+            }
+        });
+
+        rawset("Open", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue ply) {
                 Player player = null;
@@ -66,7 +91,7 @@ public class InventoryLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("UpdateInventory"), new ZeroArgFunction() {
+        rawset("UpdateInventory", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 for (HumanEntity viewer : inventory.getViewers()) {
@@ -79,14 +104,14 @@ public class InventoryLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("SetMetaTag"), new OneArgFunction() {
+        rawset("SetMetaTag", new TwoArgFunction() {
             @Override
-            public LuaValue call(LuaValue value) {
+            public LuaValue call(LuaValue key, LuaValue value) {
                 InventoryHolder holder = inventory.getHolder();
                 if (holder instanceof LuaInventoryHolder) {
                     LuaInventoryHolder luaHolder = (LuaInventoryHolder) holder;
                     if (luaHolder != null) {
-                        luaHolder.getScriptData().set("meta", value);
+                        luaHolder.getScriptData().set(LuaErrorAssert.checkString(value, "SetMetaTag", 1, null), value);
                     }
                 }
 
@@ -94,14 +119,14 @@ public class InventoryLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("GetMetaTag"), new ZeroArgFunction() {
+        rawset("GetMetaTag", new OneArgFunction() {
             @Override
-            public LuaValue call() {
+            public LuaValue call(LuaValue key) {
                 InventoryHolder holder = inventory.getHolder();
                 if (holder instanceof LuaInventoryHolder) {
                     LuaInventoryHolder luaHolder = (LuaInventoryHolder) holder;
                     if (luaHolder != null) {
-                        return luaHolder.getScriptData().get("meta");
+                        return luaHolder.getScriptData().get(LuaErrorAssert.checkString(key, "GetMetaTag", 1, null));
                     }
                 }
 
@@ -109,14 +134,14 @@ public class InventoryLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("GetSize"), new ZeroArgFunction() {
+        rawset("GetSize", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 return LuaValue.valueOf(inventory.getSize());
             }
         });
 
-        rawset(LuaValue.valueOf("GetSlots"), new ZeroArgFunction() {
+        rawset("GetSlots", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 LuaTable items = new LuaTable();
@@ -132,7 +157,7 @@ public class InventoryLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("Contains"), new OneArgFunction() {
+        rawset("Contains", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue item) {
                 ItemStack itemstack = ((ItemStackLib) item).getItemStack();
@@ -144,11 +169,11 @@ public class InventoryLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("ContainsWithMetaData"), new TwoArgFunction() {
+        rawset("ContainsWithMetaData", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue item, LuaValue key) {
                 ItemStack itemstack = ((ItemStackLib) item).getItemStack();
-                NamespacedKey nameKey = new NamespacedKey(LuaCraft.getPlugin(), key.checkjstring());
+                NamespacedKey nameKey = new NamespacedKey(LuaCraft.getPlugin(), LuaErrorAssert.checkString(key, "ContainsWithMetaData", 2, null));
 
                 if (itemstack == null || key.isnil())
                     throw new LuaError("ContainsWithMetaData requires a valid itemstack and String");

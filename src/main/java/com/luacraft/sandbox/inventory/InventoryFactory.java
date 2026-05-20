@@ -6,6 +6,7 @@ import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.TwoArgFunction;
 
+import com.luacraft.LuaErrorAssert;
 import com.luacraft.sandbox.util.ComponentUtils;
 
 public class InventoryFactory extends TwoArgFunction {
@@ -13,7 +14,7 @@ public class InventoryFactory extends TwoArgFunction {
     public LuaValue call(LuaValue rows, LuaValue title) {
         LuaTable meta = new LuaTable();
         LuaInventoryHolder holder = new LuaInventoryHolder(meta);
-        Integer size = rows.checkint() * 9;
+        Integer size = LuaErrorAssert.checkInt(rows, "Inventory", 1, null) * 9;
 
         Inventory inv = Bukkit.createInventory(holder, size, ComponentUtils.luaValueToComponent(title));
 

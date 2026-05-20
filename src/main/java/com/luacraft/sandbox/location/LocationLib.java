@@ -1,44 +1,108 @@
 package com.luacraft.sandbox.location;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.Item;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.World;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
+import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
-import com.luacraft.sandbox.entity.ItemLib;
-import com.luacraft.sandbox.item.ItemStackLib;
+import com.luacraft.LuaErrorAssert;
+import com.luacraft.sandbox.world.WorldLib;
 
 public class LocationLib extends LuaTable {
+    public static VarArgFunction locationFactory() {
+        return new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                if (args.narg() != 4) {
+                    throw new LuaError("Location() requires 4 arguments (x, y, z, world)");
+                }
+
+                double x = LuaErrorAssert.checkDouble(args.arg(1), "Location", 1, null);
+                double y = LuaErrorAssert.checkDouble(args.arg(2), "Location", 2, null);
+                double z = LuaErrorAssert.checkDouble(args.arg(3), "Location", 3, null);
+                String worldName = LuaErrorAssert.checkString(args.arg(4), "Location", 4, null);
+                World world = Bukkit.getWorld(worldName);
+
+                if (world == null) {
+                    throw new LuaError("World '" + worldName + "' does not exist or is not loaded");
+                }
+
+                Location location = new Location(world, x, y, z);
+
+                return new LocationLib(location);
+            }
+        };
+    }
+
     private final Location location;
+
     public LocationLib(Location location) {
         this.location = location;
 
-        rawset(LuaValue.valueOf("GetX"), new ZeroArgFunction() {
+        rawset("GetX", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 return LuaValue.valueOf(location.getX());
             }
         });
-        rawset(LuaValue.valueOf("GetY"), new ZeroArgFunction() {
+
+        rawset("GetY", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 return LuaValue.valueOf(location.getY());
             }
         });
-        rawset(LuaValue.valueOf("GetZ"), new ZeroArgFunction() {
+        
+        rawset("GetZ", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
                 return LuaValue.valueOf(location.getZ());
             }
         });
 
-        rawset(LuaValue.valueOf("DistanceTo"), new OneArgFunction() {
+        rawset("SetX", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue x) {
+                location.setX(LuaErrorAssert.checkDouble(x, "SetX", 1, null));
+
+                return LuaValue.NIL;
+            }
+        });
+
+        rawset("SetY", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue y) {
+                location.setY(LuaErrorAssert.checkDouble(y, "SetY", 1, null));
+
+                return LuaValue.NIL;
+            }
+        });
+        
+        rawset("SetZ", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue z) {
+                location.setZ(LuaErrorAssert.checkDouble(z, "SetZ", 1, null));
+
+                return LuaValue.NIL;
+            }
+        });
+
+        rawset("GetWorld", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return new WorldLib(location.getWorld());
+            }
+        });
+
+        rawset("DistanceTo", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue loc) {
                 if (loc instanceof LocationLib) {
@@ -50,19 +114,7 @@ public class LocationLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("DistanceToSquared"), new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue loc) {
-                if (loc instanceof LocationLib) {
-                    Location otherLoc = ((LocationLib) loc).getLocation();
-                    
-                    return LuaValue.valueOf(location.distanceSquared(otherLoc));
-                }
-                throw new LuaError("DistanceToSquared requires a Location object");
-            }
-        });
-
-        rawset(LuaValue.valueOf("IsWithinBounds"), new TwoArgFunction() {
+        rawset("IsWithinBounds", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue loc1, LuaValue loc2) {
                 if (loc1 instanceof LocationLib && loc2 instanceof LocationLib) {
@@ -82,14 +134,14 @@ public class LocationLib extends LuaTable {
                     
                     return LuaValue.valueOf(inRegion);
                 }
-                throw new LuaError("IsInRegion requires two Location objects");
+                throw new LuaError("IsWithinBounds requires two Location objects");
             }
         });
 
-        rawset(LuaValue.valueOf("SetBlockAtLocation"), new OneArgFunction() {
+        rawset("SetBlockAtLocation", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
-                Material material = Material.matchMaterial(arg.tojstring());
+                Material material = Material.matchMaterial(LuaErrorAssert.checkString(arg, "SetBlockAtLocation", 1, null));
 
                 location.getBlock().setType(material);
 
@@ -97,18 +149,7 @@ public class LocationLib extends LuaTable {
             }
         });
 
-        rawset(LuaValue.valueOf("DropItem"), new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue itemstack) {
-                ItemStack stack = ((ItemStackLib) itemstack).getItemStack();
-
-                Item droppedItem = location.getWorld().dropItem(location, stack);
-
-                return new ItemLib(droppedItem);
-            }
-        });
-
-        rawset(LuaValue.valueOf("Compare"), new OneArgFunction() {
+        rawset("Compare", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue loc) {
                 Location otherLoc = ((LocationLib) loc).getLocation();

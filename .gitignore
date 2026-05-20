@@ -1,6 +1,26 @@
+# ========================
+# Build outputs
+# ========================
+build/
+out/
 target/
-.vscode/
-target/
+
+# ========================
+# Gradle (IGNORE EVERYTHING)
+# ========================
+.gradle/
+gradle/
+
+# Allow NOTHING by default
+gradlew
+gradlew.bat
+*.gradle
+settings.gradle
+gradle.properties
+
+# ========================
+# Maven leftovers (from old setup)
+# ========================
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -9,11 +29,52 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-# https://maven.apache.org/wrapper/#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
 
-# Eclipse m2e generated files
-# Eclipse Core
+# ========================
+# IDEs
+# ========================
+# IntelliJ
+.idea/
+*.iml
+
+# Eclipse
 .project
-# JDT-specific (Eclipse Java Development Tools)
 .classpath
+.settings/
+
+# VS Code
+.vscode/
+
+# ========================
+# OS junk
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Logs / temp
+# ========================
+*.log
+*.tmp
+*.swp
+*.swo
+
+# ========================
+# Java
+# ========================
+*.class
+
+# ========================
+# Jars (don’t commit builds)
+# ========================
+*.jar
+*.war
+*.ear
+
+# ========================
+# Local / dev files
+# ========================
+jitpack.yml
+.luarc.json
+updateNotes.txt
