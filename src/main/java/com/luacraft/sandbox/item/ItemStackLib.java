@@ -14,7 +14,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
@@ -36,8 +35,12 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 
 public class ItemStackLib extends LuaTable {
-    public static LuaFunction itemStackFactory() {
-        return new TwoArgFunction() {
+    public final ItemStack stack;
+
+    public static LuaTable createTable() {
+        LuaTable item = new LuaTable();
+
+        item.set("New", new TwoArgFunction() {
             @Override
             public LuaValue call(LuaValue material, LuaValue amount) {
                 Material mat = Material.matchMaterial(LuaErrorAssert.checkString(material, "Itemstack", 1, null));
@@ -48,10 +51,10 @@ public class ItemStackLib extends LuaTable {
                 ItemStack stack = ItemStack.of(mat, amt);
                 return new ItemStackLib(stack);
             }
-        };
-    }
+        });
 
-    public final ItemStack stack;
+        return item;
+    }
 
     public ItemStackLib(ItemStack itemstack) {
         this.stack = itemstack;
@@ -327,6 +330,14 @@ public class ItemStackLib extends LuaTable {
                 ItemMeta meta = itemstack.getItemMeta();
 
                 return LuaValue.valueOf(meta.getCustomModelData());
+            }
+        });
+        
+        rawset("SetToolType", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue config) {
+
+                return ItemStackLib.this;
             }
         });
     }

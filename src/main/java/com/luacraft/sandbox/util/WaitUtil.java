@@ -22,7 +22,7 @@ public class WaitUtil extends LuaTable {
             public LuaValue call(LuaValue arg, LuaValue callback) {
                 if (!callback.isfunction()) return LuaValue.NIL;
 
-                LuaGuard.prepare(10_000, fileName);
+                LuaGuard.prepare(fileName);
 
                 int waitTime = arg.checkint();
 
@@ -58,7 +58,7 @@ public class WaitUtil extends LuaTable {
             public LuaValue call(LuaValue ticks) {
                 int waitTime = Math.max(LuaErrorAssert.checkInt(ticks, "Halt", 1, null), 1);
 
-                LuaGuard.prepare(10_000, fileName);
+                LuaGuard.prepare(fileName);
 
                 LuaThread thread = globals.running;
 

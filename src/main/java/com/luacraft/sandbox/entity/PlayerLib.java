@@ -13,6 +13,7 @@ import org.bukkit.Statistic;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.block.data.BlockData;
 import org.joml.Math;
 import org.luaj.vm2.LuaError;
@@ -636,6 +637,17 @@ public class PlayerLib extends LivingEntityLib {
             @Override
             public LuaValue call(LuaValue opStatus) {
                 player.setOp(LuaErrorAssert.checkBoolean(opStatus, "SetOp", 1, player));
+
+                return PlayerLib.this;
+            }
+        });
+
+        rawset("Give", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue itemstack) {
+                ItemStack item = ((ItemStackLib) itemstack).getItemStack();
+
+                player.give(item);
 
                 return PlayerLib.this;
             }

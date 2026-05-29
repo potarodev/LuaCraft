@@ -1,6 +1,7 @@
 package com.luacraft.sandbox.enums;
 
 import org.bukkit.Material;
+import org.bukkit.Registry;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
@@ -8,7 +9,7 @@ public class Enumerations {
     public static LuaTable BlockEnums() {
         LuaTable blockEnums = new LuaTable();
 
-        for (Material mat : Material.values()) {
+        for (Material mat : Registry.MATERIAL) {
             if (!mat.isBlock()) continue;
             
             blockEnums.set(mat.toString(), LuaValue.valueOf(mat.toString()));
@@ -32,4 +33,16 @@ public class Enumerations {
 
         return commandTypeEnums;
     }
-}
+
+    public static LuaTable ItemEnums() {
+        LuaTable itemEnums = new LuaTable();
+
+        for (Material mat : Registry.MATERIAL) {
+            if (!mat.isItem()) continue;
+
+            itemEnums.set(mat.toString(), LuaValue.valueOf(mat.toString()));
+        }
+
+        return itemEnums;
+    }
+} 

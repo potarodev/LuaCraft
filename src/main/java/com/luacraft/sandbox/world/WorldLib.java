@@ -1,5 +1,6 @@
 package com.luacraft.sandbox.world;
 
+import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -80,6 +81,96 @@ public class WorldLib extends LuaTable {
             @Override
             public LuaValue call() {
                 return LuaValue.valueOf(world.getSeed());
+            }
+        });
+
+        rawset("SetTime", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue time) {
+                world.setTime(LuaErrorAssert.checkLong(time, "SetTime", 1, null));
+
+                return WorldLib.this;
+            }
+        });
+
+        rawset("GetTime", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(world.getTime());
+            }
+        });
+
+        rawset("SetThundering", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue thundering) {
+                world.setThundering(LuaErrorAssert.checkBoolean(thundering, "SetThundering", 1, null));
+
+                return WorldLib.this;
+            }
+        });
+
+        rawset("SetThunderDuration", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue duration) {
+                world.setThunderDuration(LuaErrorAssert.checkInt(duration, "SetThunderDuration", 1, null));
+
+                return WorldLib.this;
+            }
+        });
+
+        rawset("GetThunderDuration", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(world.getThunderDuration());
+            }
+        });
+
+        rawset("SetClearDuration", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue duration) {
+                world.setClearWeatherDuration(LuaErrorAssert.checkInt(duration, "SetClearDuration", 1, null));
+
+                return WorldLib.this;
+            }
+        });
+
+        rawset("GetClearDuration", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(world.getClearWeatherDuration());
+            }
+        });
+
+        rawset("SetDifficulty", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue difficulty) {
+                Difficulty difficulty2;
+
+                switch(LuaErrorAssert.checkString(difficulty, "SetDifficulty", 1, null)) {
+                    case "Peaceful", "Peace", "peaceful", "peace", "PEACEFUL": difficulty2 = Difficulty.PEACEFUL;
+                    case "Easy", "easy", "ez", "EZ", "EASY": difficulty2 = Difficulty.EASY;
+                    case "Normal", "normal", "medium", "Medium", "MEDIUM": difficulty2 = Difficulty.NORMAL;
+                    case "Hard", "hard", "max", "Max", "HARD": difficulty2 = Difficulty.HARD;
+                    default: difficulty2 = Difficulty.EASY;
+                }
+
+                world.setDifficulty(difficulty2);
+
+                return WorldLib.this;
+            }
+        });
+
+        rawset("GetDifficulty", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(world.getDifficulty().toString());
+            }
+        });
+
+        rawset("GetMoonPhase", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(world.getMoonPhase().toString());
             }
         });
     }

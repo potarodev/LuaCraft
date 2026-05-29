@@ -82,6 +82,28 @@ public class LivingEntityLib extends EntityLib {
             }
         });
 
+        rawset("Damage", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue damage) {
+                entity.damage(LuaErrorAssert.checkDouble(damage, "Damage", 1, null));
+                return LivingEntityLib.this;
+            }
+        });
+
+        rawset("IsWet", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(entity.isInWaterOrRainOrBubbleColumn());
+            }
+        });
+
+        rawset("IsInLava", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(entity.isInLava());
+            }
+        });
+
         rawset("Equipment", new EquipmentLib(entity.getEquipment()));
 
         if (entity instanceof InventoryHolder) {

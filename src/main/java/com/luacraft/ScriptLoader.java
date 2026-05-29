@@ -17,8 +17,6 @@ import org.bukkit.plugin.Plugin;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.Varargs;
-import org.luaj.vm2.lib.DebugLib;
 import org.luaj.vm2.lib.jse.JsePlatform;
 import org.luaj.vm2.luajc.LuaJC;
 
@@ -74,12 +72,7 @@ public class ScriptLoader {
         dataLib = lib;
     }
 
-    /**
-     * Strip all the dangerous libraries out, and expose only the ones we wish to provide
-     * 
-     * @param globals
-    */
-    public static void setupGlobals(Globals globals, String fileName, Boolean isAddon) {
+    public static void setupGlobals(Globals globals, String fileName) {
         LuaCraftGlobals lcGlobals = new LuaCraftGlobals(globals);
         for (LuaCraftAPI.AddonEntry entry : LuaCraftAPI.getRegisteredAddons()) {
             entry.addon().onLoad(lcGlobals);
@@ -92,24 +85,10 @@ public class ScriptLoader {
         globals.set("_G", LuaValue.NIL);
         globals.set("luajava", LuaValue.NIL);
 
-        //Debug/Overflow
-        DebugLib customDebug = new DebugLib() {
-            private int count = 0;
-            private static final int MAX_INSTRUCTIONS = 10_000;
-
-            @Override
-            public void onInstruction(int pc, Varargs v, int top) {
-                count++;
-                if (count > MAX_INSTRUCTIONS) {
-                    throw new LuaError("Script '" + fileName + "': instruction limit exceeded");
-                }
-                super.onInstruction(pc, v, top);
-            }
-        };
-        globals.load(customDebug);
-
         //Enums
         globals.set("CommandTypes", Enumerations.CommandTypeEnums());
+        globals.set("Blocks", Enumerations.BlockEnums());
+        globals.set("Items", Enumerations.ItemEnums());
 
         //Misc
         globals.set("Broadcast", ChatLib.Broadcast());
@@ -126,7 +105,7 @@ public class ScriptLoader {
         globals.set("SendMessagesTo", PlayerLib.sendMessagesTo());
 
         //Libraries
-        globals.set("Itemstack", ItemStackLib.itemStackFactory());
+        globals.set("Item", ItemStackLib.createTable());
         globals.set("Location", LocationLib.locationFactory());
         globals.set("Component", new ComponentFactory());
         globals.set("MiniMessage", new MiniMessageFactory());
@@ -149,11 +128,6 @@ public class ScriptLoader {
         pkg.set("cpath", LuaValue.NIL);
     }
 
-    /**
-     * A private helper function to ScriptLoader
-     * 
-     * @param file
-     */
     private static FileData readScriptFile(File file) throws IOException {
         String fileContents = null;
         Path filePath;
@@ -169,12 +143,6 @@ public class ScriptLoader {
         return new FileData(fileName, fileParent, fileContents);
     }
 
-    /**
-     * Load all the available scripts inside LuaCraft/scripts that end with .lua and do not start with -
-     * 
-     * @param allGlobals
-     * @throws IOException 
-     */
     public static void loadAllScripts(Map<String, Globals> allGlobals) throws IOException, LuaError {
         OnLoad.OnScriptUnLoad(allGlobals);
 
@@ -186,7 +154,7 @@ public class ScriptLoader {
 
         for (File file : allFiles) {
             Globals globals = JsePlatform.standardGlobals();
-            setupGlobals(globals, file.getName(), false);
+            setupGlobals(globals, file.getName());
 
             FileData data = readScriptFile(file);
             if (data.fileContents() == null) {
@@ -200,8 +168,6 @@ public class ScriptLoader {
             boolean useLuaJC = rawSource.contains("@LuaJC");
             String luaSource = preprocess(rawSource);
 
-            //CommandLib.commandUnRegister(data.fileName());
-
             if (useLuaJC) {
                 LuaJC.install(globals);
             }
@@ -209,7 +175,7 @@ public class ScriptLoader {
             LuaValue loadedScript = globals.load(luaSource, data.fileName());
 
             if (loadedScript != null) {
-                LuaGuard.prepare(10_000, data.fileName());
+                LuaGuard.prepare(data.fileName());
                 try {
                     loadedScript.call();
                 } finally {
@@ -224,8 +190,6 @@ public class ScriptLoader {
 
         OnLoad.OnScriptLoad(allGlobals);
         Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
-
-        //Bukkit.getScheduler().runTask(mainPlugin, () -> {CommandLib.refreshAllPlayerCommands();});
     }
 
     public static void loadSingleScript(Map<String, Globals> allGlobals, String fileName) throws IOException, LuaError {
@@ -246,14 +210,12 @@ public class ScriptLoader {
         String luaSource = preprocess(fileContents);
 
         Globals globals = JsePlatform.standardGlobals();
-        setupGlobals(globals, fileName, false);
-
-        //CommandLib.commandUnRegister(fileName);
+        setupGlobals(globals, fileName);
 
         LuaValue loadedScript = globals.load(luaSource, fileName);
 
         if (loadedScript != null) {
-                LuaGuard.prepare(10_000, fileName);
+                LuaGuard.prepare(fileName);
                 try {
                     loadedScript.call();
                 } finally {
@@ -264,8 +226,6 @@ public class ScriptLoader {
 
         OnLoad.OnScriptLoad(Map.of(fileName, allGlobals.get(fileName)));
         Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
-
-        //Bukkit.getScheduler().runTask(mainPlugin, () -> CommandLib.refreshAllPlayerCommands());
 
         markAlive(fileName);
         clearUnloadedDead(fileName, scriptsFolder);
@@ -337,7 +297,6 @@ public class ScriptLoader {
 
     public static void markDead(String fileName) {
         deadScripts.add(fileName);
-        incrementGeneration(fileName);
     }
 
     public static boolean isDead(String fileName) {

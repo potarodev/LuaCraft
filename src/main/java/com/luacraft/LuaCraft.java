@@ -14,9 +14,9 @@ import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
 
 import ch.njol.skript.Skript;
-import io.papermc.paper.command.brigadier.CommandSourceStack;
-import io.papermc.paper.command.brigadier.Commands;
-import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIConfig;
+import dev.jorel.commandapi.CommandAPIPaperConfig;
 
 import org.skriptlang.skript.addon.SkriptAddon;
 
@@ -24,7 +24,6 @@ import com.luacraft.addons.java.LuaCraftAPI;
 import com.luacraft.sandbox.database.SQLiteLib;
 import com.luacraft.sandbox.database.SQLiteLuaLib;
 import com.luacraft.sandbox.skript.LuaFuncToSkript;
-import com.mojang.brigadier.CommandDispatcher;
 
 import net.milkbowl.vault.chat.Chat;
 
@@ -39,25 +38,24 @@ public class LuaCraft extends JavaPlugin {
     public static Chat chat = null;
     private Boolean hasVaultInstalled;
     private static LuaCraft instance;
-    public static Commands commands;
-    public static CommandDispatcher<CommandSourceStack> dispatcher;
+
+    @Override
+    public void onLoad() {
+        CommandAPI.onLoad(new CommandAPIPaperConfig(this).setNamespace("luacraft").silentLogs(true));
+    }
 
     @Override
     public void onEnable() {
         plugin = this;
         this.dataLib = new SQLiteLuaLib(plugin);
         instance = this;
-
-        this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            commands = event.registrar();
-            dispatcher = event.registrar().getDispatcher();
-        });
-
         try {
             RegisterListeners.registerListeners(this, allGlobals);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        CommandAPI.onEnable();
 
         int pluginId = 29491;
         
@@ -116,6 +114,8 @@ public class LuaCraft extends JavaPlugin {
         }
 
         dataLib.flush();
+
+        CommandAPI.onDisable();
     }
 
     public static JavaPlugin getPlugin() {

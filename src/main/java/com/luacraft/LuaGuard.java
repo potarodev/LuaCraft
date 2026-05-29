@@ -3,24 +3,31 @@ package com.luacraft;
 import org.luaj.vm2.LuaError;
 
 public class LuaGuard {
+    private static final ThreadLocal<Long> windowStart = ThreadLocal.withInitial(() -> 0L);
     private static final ThreadLocal<Integer> instructions = ThreadLocal.withInitial(() -> 0);
-    private static final ThreadLocal<Integer> limit = ThreadLocal.withInitial(() -> 10_000);
     private static String fileName = "";
 
     public static void cleanup() {
         instructions.remove();
     }
 
-    public static void prepare(int max, String filename) {
+    public static void prepare(String filename) {
         instructions.set(0);
-        limit.set(max);
         fileName = filename;
     }
 
     public static void check() {
+        long now = System.currentTimeMillis();
+        long start = windowStart.get();
+
+        if (now - start > 50) {
+            windowStart.set(now);
+            instructions.set(0);
+        }
+
         int count = instructions.get() + 1;
-        if (count > limit.get()) {
-            throw new LuaError("Script '" + fileName + "': instruction limit exceeded");
+        if (count > 1000) {
+            throw new LuaError("Script '" + fileName + "': infinite loop detected");
         }
         instructions.set(count);
     }

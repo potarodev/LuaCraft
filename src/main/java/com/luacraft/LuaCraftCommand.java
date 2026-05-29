@@ -98,7 +98,7 @@ public class LuaCraftCommand {
                             .executes(ctx -> {
                                 CommandSender sender = ctx.getSource().getSender();
                                 Globals replGlobals = JsePlatform.standardGlobals();
-                                ScriptLoader.setupGlobals(replGlobals, "repl", false);
+                                ScriptLoader.setupGlobals(replGlobals, "repl");
 
                                 if (sender instanceof Player player) {
                                     replGlobals.set("sender", new PlayerLib(player));
