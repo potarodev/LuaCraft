@@ -1,0 +1,71 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '9.0.0-beta4'
+}
+ 
+group = 'com.luacraft'
+version = '3.0.0'
+ 
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+ 
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.papermc.io/repository/maven-public/' }
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://repo.fancyinnovations.com/releases' }
+}
+ 
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
+    compileOnly('com.github.MilkBowl:VaultAPI:1.7') {
+        exclude group: 'org.bukkit', module: 'bukkit'
+    }
+    compileOnly 'net.kyori:adventure-text-minimessage:4.26.1'
+    compileOnly 'com.github.SkriptLang:Skript:2.14.1'
+    compileOnly 'com.google.guava:guava:31.1-jre'
+    compileOnly 'org.apache.commons:commons-text:1.11.0'
+    compileOnly 'dev.jorel:commandapi-paper-core:11.2.0'
+
+    implementation 'com.zaxxer:HikariCP:6.2.1'
+    implementation 'org.xerial:sqlite-jdbc:3.48.0.0'
+    implementation('org.apache.bcel:bcel:6.12.0') {
+        exclude group: 'org.apache.commons', module: 'commons-lang3'
+        exclude group: 'commons-io', module: 'commons-io'
+    }
+    implementation 'org.bstats:bstats-bukkit:3.1.0'
+    implementation files('libs/luaj-jse-3.0.2.jar')
+    implementation 'dev.jorel:commandapi-paper-shade:11.2.0'
+}
+
+shadowJar {
+    archiveClassifier.set('')
+
+    relocate 'org.bstats', 'com.luacraft.bstats'
+    relocate 'com.zaxxer.hikari', 'com.luacraft.libs.hikari'
+    relocate 'org.luaj', 'com.luacraft.libs.luaj'
+    relocate 'dev.jorel.commandapi', 'com.luacraft.commandapi'
+
+    minimize()
+
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+}
+
+tasks.register("apiJar", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    archiveClassifier.set('api')
+    from(sourceSets.main.output) {
+        include 'com/luacraft/addons/java/**'
+    }
+    from(sourceSets.main.output) {
+        include 'com/luacraft/sandbox/**'
+    }
+    relocate 'org.luaj', 'com.luacraft.libs.luaj'
+    include 'com/luacraft/addons/java/**'
+    include 'com/luacraft/LuaErrorAssert.class'
+}
+
+build.dependsOn shadowJar
