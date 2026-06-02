@@ -36,7 +36,7 @@ public class LuaCraftCommand {
                         return Command.SINGLE_SUCCESS;
                     })
                     .then(Commands.literal("reload")
-                        .then(Commands.argument("file", StringArgumentType.string())
+                        .then(Commands.argument("file", StringArgumentType.greedyString())
                             .suggests((ctx, builder) -> {
                                 List<String> completions = new ArrayList<>();
                                 collectCompletions(pluginScriptsFolder, pluginScriptsFolder, completions);

@@ -8,15 +8,8 @@ target/
 # ========================
 # Gradle (IGNORE EVERYTHING)
 # ========================
-.gradle/
-gradle/
 
 # Allow NOTHING by default
-gradlew
-gradlew.bat
-*.gradle
-settings.gradle
-gradle.properties
 
 # ========================
 # Maven leftovers (from old setup)
@@ -68,7 +61,6 @@ Thumbs.db
 # ========================
 # Jars (don’t commit builds)
 # ========================
-*.jar
 *.war
 *.ear
 
