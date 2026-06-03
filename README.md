@@ -23,7 +23,7 @@ You can find our Modrinth at [Modrinth](https://modrinth.com/plugin/officialluac
 function ServerEvent.OnPlayerJoin(event)
    local player = event.Player
    local white = "&#FFFFFF"
-   local component = Component(white, "Hello world")
+   local component = Component(white, "This is my first event!")
 
    Chat.Broadcast(component)
 end
