@@ -1,8 +1,12 @@
 package com.luacraft.addons.java;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.luacraft.LuaCraft;
+import org.bukkit.Bukkit;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaValue;
 
@@ -19,6 +23,15 @@ public class LuaCraftGlobals {
 
     public LuaCraftGlobals(Globals globals) {
         this.globals = globals;
+
+        if (LuaCraft.getInstance().getTestState().ENABLED) {
+            try (InputStream stream = this.getClass().getResourceAsStream("/lust.lua")) {
+                LuaValue value = globals.load(stream, "_lust", "t", globals).call();
+                globals.set("Test", value);
+            } catch (IOException e) {
+                Bukkit.getLogger().severe("Failed to load lust.lua for test mode: " + e.getMessage());
+            }
+        }
     }
 
     public void set(String key, LuaValue value) {
