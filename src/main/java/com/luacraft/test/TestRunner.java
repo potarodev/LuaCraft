@@ -40,7 +40,6 @@ public class TestRunner {
 
         Files.createDirectories(DESTINATION_PLUGIN_JAR.getParent());
         Path pluginJarSource = new File(TestRunner.class.getProtectionDomain().getCodeSource().getLocation().toURI()).toPath();
-        System.out.println(pluginJarSource);
         Files.copy(pluginJarSource, DESTINATION_PLUGIN_JAR, StandardCopyOption.REPLACE_EXISTING);
     }
 
