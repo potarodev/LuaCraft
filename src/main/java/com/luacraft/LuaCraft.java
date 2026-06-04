@@ -64,17 +64,17 @@ public class LuaCraft extends JavaPlugin {
 
         pluginFolder = this.getDataFolder();
         pluginScriptsFolder = new File(pluginFolder, "scripts");
+        pluginBootStrapperFolder = new File(pluginFolder, "bootstrapper");
         pluginDataFile = new File(pluginFolder, "storage.db");
-
-        try {
-            pluginFolder.mkdirs();
-            pluginScriptsFolder.mkdirs();
-            pluginBootStrapperFolder.mkdirs();
-        } catch (SecurityException e) {}
 
         ScriptLoader.passDataLib(dataLib);
         Bukkit.getScheduler().runTaskTimer(plugin, () -> dataLib.flush(), 1200L, 1200L);
         SQLiteLib.initialize(pluginDataFile.getAbsolutePath());
+
+        try {
+            pluginScriptsFolder.mkdirs();
+            pluginBootStrapperFolder.mkdirs();
+        } catch (SecurityException e) {}
 
         ScriptLoader.setScriptsFolder(pluginScriptsFolder, this);
 
