@@ -1,0 +1,23 @@
+name: LuaCraft
+version: 3.0.0
+main: com.luacraft.LuaCraft
+api-version: '1.21'
+author: BorpBorp
+bootstrapper: com.luacraft.sandbox.bootstrap.LuaBootstrap
+
+dependencies:
+  server:
+    Vault:
+      load: BEFORE
+      required: false
+    Skript:
+      load: BEFORE
+      required: false
+    FancyNPCs:
+      load: BEFORE
+      required: false
+
+permissions:
+  lua.command:
+    description: Allows use of /lua
+    default: op
