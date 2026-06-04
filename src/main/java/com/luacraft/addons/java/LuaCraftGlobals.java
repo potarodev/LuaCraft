@@ -25,8 +25,8 @@ public class LuaCraftGlobals {
         this.globals = globals;
 
         if (LuaCraft.getInstance().getTestState().ENABLED) {
-            try (InputStream stream = this.getClass().getResourceAsStream("/lust.lua")) {
-                LuaValue value = globals.load(stream, "_lust", "t", globals).call();
+            try (InputStream stream = this.getClass().getResourceAsStream("/lester.lua")) {
+                LuaValue value = globals.load(stream, "testlib", "t", globals).call();
                 globals.set("Test", value);
             } catch (IOException e) {
                 Bukkit.getLogger().severe("Failed to load lust.lua for test mode: " + e.getMessage());

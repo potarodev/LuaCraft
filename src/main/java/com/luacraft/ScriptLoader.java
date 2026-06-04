@@ -11,12 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.luacraft.sandbox.util.ComponentUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.*;
+import org.luaj.vm2.lib.DebugLib;
+import org.luaj.vm2.lib.OneArgFunction;
+import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.jse.JsePlatform;
 import org.luaj.vm2.luajc.LuaJC;
 
@@ -126,6 +128,29 @@ public class ScriptLoader {
 
         pkg.set("path", LuaValue.valueOf(scriptsPatch));
         pkg.set("cpath", LuaValue.NIL);
+
+        if (LuaCraft.getInstance().getTestState().ENABLED) {
+            globals.set("io", new LuaTable() {
+                {
+                    rawset("write", new VarArgFunction() {
+                        @Override
+                        public Varargs invoke(Varargs args) {
+                            for (int i = 1, n = args.narg(); i <= n; i++)
+                                System.out.print(args.checkstring(i));
+                            return args;
+                        }
+                    });
+                    rawset("flush", new VarArgFunction() {
+                        @Override
+                        public Varargs invoke(Varargs args) {
+                            System.out.flush();
+                            return args;
+                        }
+                    });
+                }
+            });
+            globals.load(new DebugLib());
+        }
     }
 
     private static FileData readScriptFile(File file) throws IOException {

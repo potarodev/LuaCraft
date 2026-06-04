@@ -1,13 +1,12 @@
-local describe, test, expect = Test.describe, Test.test, Test.expect
+local describe, test, expect = Test.describe, Test.it, Test.expect
 
 describe("example", function()
     describe("module1", function()
         test("feature1", function()
-            expect(1).to.be.a('number')
-            expect('astring').to.equal('astring')
+            expect.equal('something', 'something')
         end)
         test("feature2", function()
-            expect(nil).to.exist()
+            expect.truthy(false)
         end)
     end)
 end)
