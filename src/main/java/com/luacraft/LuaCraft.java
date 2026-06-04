@@ -15,7 +15,6 @@ import org.luaj.vm2.LuaError;
 
 import ch.njol.skript.Skript;
 import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.CommandAPIConfig;
 import dev.jorel.commandapi.CommandAPIPaperConfig;
 
 import org.skriptlang.skript.addon.SkriptAddon;

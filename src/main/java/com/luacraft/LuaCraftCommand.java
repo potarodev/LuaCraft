@@ -48,6 +48,7 @@ public class LuaCraftCommand {
                                 CommandSender sender = ctx.getSource().getSender();
                                 long startTime = System.nanoTime();
                                 try {
+                                    if (!fileName.endsWith(".lua")) fileName += ".lua";
                                     ScriptLoader.loadSingleScript(allGlobals, fileName);
                                     long durationMs = (System.nanoTime() - startTime) / 1000000;
                                     sender.sendMessage(ComponentUtils.parseLegacy("[&7LuaCraft&r] &6Reloaded " + fileName + " in " + durationMs + "ms"));
