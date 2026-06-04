@@ -5,6 +5,8 @@ build/
 out/
 target/
 
+.gradle
+
 # ========================
 # Gradle (IGNORE EVERYTHING)
 # ========================

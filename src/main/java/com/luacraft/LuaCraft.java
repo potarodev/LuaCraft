@@ -64,6 +64,7 @@ public class LuaCraft extends JavaPlugin {
 
         pluginFolder = this.getDataFolder();
         pluginScriptsFolder = new File(pluginFolder, "scripts");
+        pluginBootStrapperFolder = new File(pluginFolder, "bootstrapper");
         pluginDataFile = new File(pluginFolder, "storage.db");
 
         try {
@@ -75,6 +76,8 @@ public class LuaCraft extends JavaPlugin {
         ScriptLoader.passDataLib(dataLib);
         Bukkit.getScheduler().runTaskTimer(plugin, () -> dataLib.flush(), 1200L, 1200L);
         SQLiteLib.initialize(pluginDataFile.getAbsolutePath());
+
+
 
         ScriptLoader.setScriptsFolder(pluginScriptsFolder, this);
 
