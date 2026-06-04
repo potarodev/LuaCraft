@@ -17,12 +17,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class TestRunner {
     private static final String FILL_BUILD_ENDPOINT = "https://fill.papermc.io/v3/projects/paper/versions/1.21.4/builds/latest";
     private static final Path DESTINATION_PAPERCLIP_JAR = Paths.get("build/test_environment/paperclip.jar");
     private static final Path DESTINATION_PLUGIN_JAR = Paths.get("build/test_environment/plugins/LuaCraft.jar");
+    private static final Path SOURCE_TESTS = Paths.get("src/main/resources/tests/");
+    private static final Path DESTINATION_TESTS = Paths.get("build/test_environment/plugins/LuaCraft/scripts/");
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) throws IOException, InterruptedException, URISyntaxException {
@@ -41,6 +45,36 @@ public class TestRunner {
         Files.createDirectories(DESTINATION_PLUGIN_JAR.getParent());
         Path pluginJarSource = new File(TestRunner.class.getProtectionDomain().getCodeSource().getLocation().toURI()).toPath();
         Files.copy(pluginJarSource, DESTINATION_PLUGIN_JAR, StandardCopyOption.REPLACE_EXISTING);
+
+        if (Files.exists(DESTINATION_TESTS)) {
+            try (Stream<Path> paths = Files.walk(DESTINATION_TESTS)) {
+                paths.sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            }
+        }
+        Files.createDirectories(DESTINATION_TESTS);
+        System.out.println("Copying test scripts...");
+
+        try (Stream<Path> paths = Files.walk(SOURCE_TESTS)) {
+            paths.forEach((sourcePath) -> {
+                Path relativePath = SOURCE_TESTS.relativize(sourcePath);
+                Path destinationPath = DESTINATION_TESTS.resolve(relativePath);
+                if (Files.isDirectory(sourcePath)) {
+                    try {
+                        Files.createDirectories(destinationPath);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return;
+                }
+                try {
+                    Files.copy(sourcePath, destinationPath);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 
     private static void downloadJar(URI source) throws IOException, InterruptedException {
