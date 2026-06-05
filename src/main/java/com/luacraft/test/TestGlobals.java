@@ -15,6 +15,7 @@ public class TestGlobals {
         globals.set("io", new TestIoGlobals());
         globals.set("os", new TestOsGlobals());
         globals.load(new DebugLib());
+        globals.set("TestReflect", new TestReflectGlobals());
 
         try (InputStream stream = TestGlobals.class.getResourceAsStream("/lester.lua")) {
             LuaValue value = globals.load(stream, "testlib", "t", globals).call();
@@ -59,6 +60,38 @@ public class TestGlobals {
                 @Override
                 public LuaValue call() {
                     return LuaDouble.valueOf((System.currentTimeMillis() - t0) / 1000.0);
+                }
+            });
+        }
+    }
+
+
+    private static class TestReflectGlobals extends LuaTable {
+        public TestReflectGlobals() {
+            rawset("GetField", new TwoArgFunction() {
+                @Override
+                public LuaValue call(LuaValue luaValue, LuaValue fieldName) {
+                    if (luaValue instanceof LuaUserdata) {
+                        System.out.println("coercing userdata: " + luaValue + " " + luaValue.getClass());
+//                        LuaValue1
+                        return luaValue.get(fieldName);
+                    } else {
+                        try {
+                            System.out.println(Arrays.toString(luaValue.getClass().getDeclaredFields()));
+                            Field field = luaValue.getClass().getDeclaredField(fieldName.checkjstring());
+    //                        System.out.println("Found field: " + field);
+                            field.setAccessible(true);
+                            return CoerceJavaToLua.coerce(field.get(luaValue));
+                        } catch (NoSuchFieldException | IllegalAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            });
+            rawset("Coerce", new OneArgFunction() {
+                @Override
+                public LuaValue call(LuaValue luaValue) {
+                    return CoerceJavaToLua.coerce(luaValue.checktable());
                 }
             });
         }

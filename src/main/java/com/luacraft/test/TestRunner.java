@@ -106,6 +106,7 @@ public class TestRunner {
         args.add(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
         args.add("-Dcom.mojang.eula.agree=true");
         args.add("-Dluacraft.testing.enabled=true");
+        args.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000");
         args.add("-jar");
         args.add(TestRunner.DESTINATION_PAPERCLIP_JAR.getFileName().toString());
         args.add("--nogui");
