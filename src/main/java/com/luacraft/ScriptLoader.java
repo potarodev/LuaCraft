@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.luacraft.sandbox.util.ComponentUtils;
+import com.luacraft.test.TestGlobals;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -130,26 +131,7 @@ public class ScriptLoader {
         pkg.set("cpath", LuaValue.NIL);
 
         if (LuaCraft.getInstance().getTestState().ENABLED) {
-            globals.set("io", new LuaTable() {
-                {
-                    rawset("write", new VarArgFunction() {
-                        @Override
-                        public Varargs invoke(Varargs args) {
-                            for (int i = 1, n = args.narg(); i <= n; i++)
-                                System.out.print(args.checkstring(i));
-                            return args;
-                        }
-                    });
-                    rawset("flush", new VarArgFunction() {
-                        @Override
-                        public Varargs invoke(Varargs args) {
-                            System.out.flush();
-                            return args;
-                        }
-                    });
-                }
-            });
-            globals.load(new DebugLib());
+            TestGlobals.loadAll(globals);
         }
     }
 
