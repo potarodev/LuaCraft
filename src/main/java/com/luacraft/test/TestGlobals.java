@@ -24,7 +24,7 @@ public class TestGlobals {
             LuaValue value = globals.load(stream, "testlib", "t", globals).call();
             globals.set("Test", value);
         } catch (IOException e) {
-            Bukkit.getLogger().severe("Failed to load lust.lua for test mode: " + e.getMessage());
+            Bukkit.getLogger().severe("Failed to load the test library: " + e.getMessage());
         }
     }
 
