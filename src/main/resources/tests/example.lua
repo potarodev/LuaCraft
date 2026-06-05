@@ -6,7 +6,7 @@ local stack = TestReflect.GetField(item, "stack")
 print(stack)
 // print(stack.get("amount"))
 // print(stack.amount)
-local amount = TestReflect.GetField(stack, "amount")
+local amount = TestReflect.CallMethod(stack, "getAmount")
 print(amount)
 
 //describe("example", function()

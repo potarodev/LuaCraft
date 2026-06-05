@@ -4,10 +4,13 @@ import org.bukkit.Bukkit;
 import org.luaj.vm2.*;
 import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.jse.CoerceJavaToLua;
+import org.luaj.vm2.lib.jse.CoerceLuaToJava;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 public class TestGlobals {
@@ -71,20 +74,52 @@ public class TestGlobals {
             rawset("GetField", new TwoArgFunction() {
                 @Override
                 public LuaValue call(LuaValue luaValue, LuaValue fieldName) {
-                    if (luaValue instanceof LuaUserdata) {
-                        System.out.println("coercing userdata: " + luaValue + " " + luaValue.getClass());
-//                        LuaValue1
-                        return luaValue.get(fieldName);
-                    } else {
-                        try {
-                            System.out.println(Arrays.toString(luaValue.getClass().getDeclaredFields()));
-                            Field field = luaValue.getClass().getDeclaredField(fieldName.checkjstring());
-    //                        System.out.println("Found field: " + field);
-                            field.setAccessible(true);
-                            return CoerceJavaToLua.coerce(field.get(luaValue));
-                        } catch (NoSuchFieldException | IllegalAccessException e) {
-                            throw new RuntimeException(e);
+                    Object obj = luaValue;
+                    if (luaValue.type() == LuaValue.TUSERDATA) {
+                        obj = luaValue.touserdata();
+                    }
+
+                    try {
+                        Field field = obj.getClass().getDeclaredField(fieldName.checkjstring());
+                        field.setAccessible(true);
+                        return CoerceJavaToLua.coerce(field.get(obj));
+                    } catch (NoSuchFieldException e) {
+                        System.out.println("Failed to find field: " + fieldName.checkjstring() + " in class " + obj.getClass().getName());
+                        return NIL;
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            rawset("CallMethod", new VarArgFunction() {
+                @Override
+                public Varargs invoke(Varargs varargs) {
+                    if (varargs.narg() < 2) {
+                        throw new LuaError("Expected at least 2 arguments: object and method name");
+                    }
+                    LuaValue luaValue = varargs.arg(1);
+                    LuaValue methodName = varargs.arg(2);
+                    Object obj = luaValue;
+                    if (luaValue.type() == LuaValue.TUSERDATA) {
+                        obj = luaValue.touserdata();
+                    }
+
+                    try {
+                        System.out.println(Arrays.toString(obj.getClass().getDeclaredFields()));
+                        Method method = obj.getClass().getDeclaredMethod(methodName.checkjstring());
+                        method.setAccessible(true);
+                        Object[] javaArgs = new Object[varargs.narg() - 2];
+                        for (int i = 3; i <= varargs.narg(); i++) {
+                            LuaValue arg = varargs.arg(i);
+                            javaArgs[i - 3] = CoerceLuaToJava.coerce(arg, Object.class);
                         }
+                        Object result = method.invoke(obj, javaArgs);
+                        return CoerceJavaToLua.coerce(result);
+                    } catch (NoSuchMethodException e) {
+                        System.out.println("Failed to find method: " + methodName.checkjstring() + " in class " + obj.getClass().getName());
+                        return NIL;
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             });

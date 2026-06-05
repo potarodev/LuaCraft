@@ -113,7 +113,9 @@ public class TestRunner {
 
         Process process = new ProcessBuilder(args)
                 .directory(TestRunner.DESTINATION_PAPERCLIP_JAR.getParent().toFile())
-                .inheritIO()
+                .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+                .redirectInput(ProcessBuilder.Redirect.INHERIT)
                 .start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(process::destroy));
