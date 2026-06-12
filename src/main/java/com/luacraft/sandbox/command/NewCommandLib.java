@@ -2,6 +2,11 @@ package com.luacraft.sandbox.command;
 
 import com.luacraft.LuaCraft;
 import com.luacraft.LuaErrorAssert;
+import com.luacraft.sandbox.command.args.LiteralArgument;
+import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import io.papermc.paper.command.brigadier.Commands;
 import org.bukkit.command.Command;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
@@ -20,29 +25,38 @@ public class NewCommandLib extends LuaTable {
                 LuaErrorAssert.checkString(args.arg(1), "Register", 1, null);
                 LuaErrorAssert.checkFunction(args.arg(args.narg()), "Register", 1, null);
 
-                String[] literals = new String[args.narg() - 1];
+                CommandArgument[] commandArguments = new CommandArgument[args.narg() - 1];
                 for (int i = 1; i < args.narg(); i++) {
                     if (args.isstring(i)) {
-                        literals[i-1] = args.arg(i).tojstring();
+                        commandArguments[i-1] = new LiteralArgument(args.arg(i).tojstring(), new LuaTable());
                         continue;
                     }
                     if (args.istable(i)) {
                         LuaTable table = args.checktable(i);
                         try {
                             CommandArgument arg = (CommandArgument) table;
-                            literals[i-1] = arg.toString();
+                            commandArguments[i-1] = arg;
                             continue;
                         } catch (ClassCastException e) {
-                            LuaErrorAssert.throwError("Command argument " + i + " while registering command '" + String.join(" ", literals) + "' was a table, but not a valid argument", null);
+                            LuaErrorAssert.throwError("Command argument " + i + " while registering command '" + argumentArrayToString(commandArguments) + "' was a table, but not a valid argument", null);
                         }
                     }
-                    LuaErrorAssert.throwError("Command argument " + i + " while registering command '" + String.join(" ", literals) + "' was a table, but not a valid argument", null);
+                    LuaErrorAssert.throwError("Command argument " + i + " while registering command '" + argumentArrayToString(commandArguments) + "' was a table, but not a valid argument", null);
                 }
 
-                LuaCraft.getInstance().getLogger().info("Registering command literals " + String.join(" ", literals));
+                LuaCraft.getInstance().getLogger().info("Registering command literals " + argumentArrayToString(commandArguments));
 
                 return LuaValue.NIL;
             }
         });
+
+    }
+
+    private String argumentArrayToString(CommandArgument[] args) {
+        StringBuilder sb = new StringBuilder();
+        for (CommandArgument arg : args) {
+            sb.append(arg.toString()).append(" ");
+        }
+        return sb.toString().trim();
     }
 }

@@ -1,18 +1,17 @@
 package com.luacraft.sandbox.command;
 
 import com.luacraft.LuaErrorAssert;
+import com.luacraft.sandbox.command.args.LiteralArgument;
 import com.luacraft.sandbox.command.args.StringArgument;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.TwoArgFunction;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class ArgsLib extends LuaTable {
     public ArgsLib() {
+        rawset("Literal", wrapConstructor(LiteralArgument::new, "Literal"));
         rawset("String", wrapConstructor(StringArgument::new, "String"));
     }
 
