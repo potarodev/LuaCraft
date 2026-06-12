@@ -4,10 +4,10 @@ Command.Register("listplayers", function (sender)
 end)
 
 // One arg
-//Command.Register("hello", Args.String("name"), function (sender, args)
-//    local name = args.GetString("name") // Alias for .Get("name", Args.String), but since it's built-in, we provide a shorthand
-//    // execution
-//end)
+Command.Register("hello", Args.String("name"), function (sender, args)
+    local name = args.GetString("name") // Alias for .Get("name", Args.String), but since it's built-in, we provide a shorthand
+    // execution
+end)
 //
 //// One optional arg
 //Command.Register("fly", Args.Player("target", { optional = true }), function (sender, args)
@@ -33,3 +33,5 @@ end)
 //Command.Register("op-everyone", { permission = "custom.wtf" }, function(sender)
 //    // op everyone!!!
 //end)
+
+// Command.Register("countdown", Args.Integer("min", { min = 1 })
